@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: TillmanBuildsTech.Serv
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: TillmanBuildsTech
+PublisherUrl: https://github.com/TillmanBuildsTech
+PackageName: Serv
+PackageUrl: https://github.com/TillmanBuildsTech/serv
+License: MIT
+ShortDescription: A cross-platform Windows service / systemd / launchd process supervisor.
+Description: >-
+  Serv installs and supervises a long-running executable as a native Windows
+  service (or systemd/launchd unit on Linux/macOS), handling process
+  lifecycle, graceful shutdown, automatic restart with backoff, log capture
+  and rotation, and lifecycle hooks.
+Tags:
+  - service
+  - process-supervisor
+  - windows-service
+  - systemd
+  - launchd
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
