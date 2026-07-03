@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.2]
+
+### Added
+
+- npm wrapper package (`packaging/npm/serv/`) so `npx @tillmanbuildstech/serv`
+  or `npm install -g @tillmanbuildstech/serv` can install/run serv on any
+  platform with Node.js — a postinstall script downloads and SHA256-verifies
+  the matching release archive. Wired into the release pipeline's version
+  bump alongside Homebrew/Scoop/winget.
+
 ## [0.1.0]
 
 Initial release.

@@ -6,7 +6,8 @@ Run after release artifacts exist locally, e.g.:
     python3 scripts/update_packaging_version.py 0.1.1 out
 
 `out/` must contain the six release archives named as the Release workflow
-produces them (serv-<goos>-<goarch>.{tar.gz,zip}).
+produces them (serv-<goos>-<goarch>.{tar.gz,zip}). Bumps Homebrew, Scoop,
+winget, and the npm wrapper package.
 """
 
 import hashlib
@@ -123,6 +124,27 @@ def update_scoop(version, hashes):
         f.write("\n")
 
 
+def update_npm(version, hashes):
+    pkg_path = "packaging/npm/serv/package.json"
+    with open(pkg_path, encoding="utf-8") as f:
+        pkg = json.load(f)
+    pkg["version"] = version
+    with open(pkg_path, "w", encoding="utf-8") as f:
+        json.dump(pkg, f, indent=4)
+        f.write("\n")
+
+    checksums_path = "packaging/npm/serv/checksums.json"
+    with open(checksums_path, encoding="utf-8") as f:
+        checksums = json.load(f)
+    checksums["version"] = version
+    for fname in checksums:
+        if fname in hashes:
+            checksums[fname] = hashes[fname]
+    with open(checksums_path, "w", encoding="utf-8") as f:
+        json.dump(checksums, f, indent=4)
+        f.write("\n")
+
+
 def main():
     if len(sys.argv) != 3:
         raise SystemExit(f"usage: {sys.argv[0]} <version> <artifact-dir>")
@@ -132,6 +154,7 @@ def main():
     update_homebrew(version, hashes)
     update_scoop(version, hashes)
     update_winget(version, hashes)
+    update_npm(version, hashes)
 
 
 if __name__ == "__main__":

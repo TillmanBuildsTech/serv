@@ -63,6 +63,32 @@ Serv ships as a plain binary; no distribution-specific package is required.
 Download or build the `serv` binary for your architecture and place it on
 your `PATH` (e.g. `/usr/local/bin`).
 
+## npm (any platform, if you have Node.js)
+
+The package at
+[`packaging/npm/serv/`](../packaging/npm/serv/) wraps the platform binary
+for anyone who already has Node.js on `PATH` and wants to skip a
+platform-specific package manager. Try it without installing:
+
+```sh
+npx @tillmanbuildstech/serv status myapp
+```
+
+Or install it:
+
+```sh
+npm install -g @tillmanbuildstech/serv
+serv status myapp
+```
+
+On install, a postinstall script downloads the matching release archive
+from GitHub Releases and verifies it against the SHA256 pinned in
+[`checksums.json`](../packaging/npm/serv/checksums.json) — it does not
+compile anything or run arbitrary remote code. This is a convenience
+on-ramp; for a service manager you'll invoke repeatedly, Scoop/winget/
+Homebrew above give you normal update mechanics that npm global installs
+don't.
+
 ## Building from source
 
 Requires Go 1.25 or later.

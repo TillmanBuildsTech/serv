@@ -16,8 +16,12 @@
 go.work
 
 # Build output
-bin/
+/bin/
 dist/
+
+# Binary downloaded into the npm wrapper package by its postinstall script
+packaging/npm/serv/bin/serv
+packaging/npm/serv/bin/*.exe
 
 # IDE
 .idea/
