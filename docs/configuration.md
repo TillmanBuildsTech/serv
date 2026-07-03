@@ -7,6 +7,32 @@ one by hand and pass it with `serv install --config service.yaml`.
 Durations (anywhere a field's type is noted as `duration`) are Go duration
 strings, e.g. `"1500ms"`, `"5s"`, `"2m"`, `"1h"`.
 
+## Where config lives
+
+`serv install` writes a `config.yaml` for the service to a per-OS system
+directory, keyed by the service's `name`:
+
+| OS | Default path |
+|---|---|
+| Windows | `%PROGRAMDATA%\serv\<name>\config.yaml` (usually `C:\ProgramData\serv\<name>\config.yaml`) |
+| macOS | `~/Library/Application Support/serv/<name>/config.yaml` |
+| Linux | `/etc/serv/<name>/config.yaml` |
+
+This is the file `serv status`, `serv config`, and friends read/update by
+service name — you normally don't need to know the path at all.
+
+To change settings after install, prefer `serv config <name> [flags]` (same
+flags as `install`) rather than hand-editing the file, since it goes through
+the platform's service manager (SCM/systemd/launchd) instead of just
+rewriting YAML on disk. If you do want to inspect or hand-edit it directly,
+the path above tells you where to look; on Linux/macOS you'll typically need
+`sudo` to write there.
+
+The base directory can be overridden with the `SERV_CONFIG_DIR` environment
+variable (mainly useful for testing) — when set, config is written to
+`$SERV_CONFIG_DIR/<name>/config.yaml` on every platform instead of the
+default above.
+
 ## Top-level fields
 
 | Field | Type | Default | Description |

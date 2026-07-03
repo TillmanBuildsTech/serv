@@ -28,6 +28,9 @@ func Parse(data []byte) (*api.ServiceConfig, error) {
 }
 
 func DefaultConfigPath(serviceName string) string {
+	if dir := os.Getenv("SERV_CONFIG_DIR"); dir != "" {
+		return filepath.Join(dir, serviceName, "config.yaml")
+	}
 	switch runtime.GOOS {
 	case "windows":
 		programData := os.Getenv("PROGRAMDATA")

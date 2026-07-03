@@ -215,10 +215,13 @@ func TestStatus(t *testing.T) {
 		t.Fatalf("status: unexpected error: %v", err)
 	}
 
-	for _, want := range []string{"Name:   myapp", "State:  running", "PID:    4242", "Uptime: 1m30s"} {
+	for _, want := range []string{"Name:   myapp", "State:  running", "PID:    4242", "Uptime: 1m30s", "Config: "} {
 		if !strings.Contains(out, want) {
 			t.Errorf("status output missing %q; got:\n%s", want, out)
 		}
+	}
+	if !strings.Contains(out, config.DefaultConfigPath("myapp")) {
+		t.Errorf("status output missing config path; got:\n%s", out)
 	}
 }
 
@@ -276,7 +279,7 @@ func TestListEmpty(t *testing.T) {
 
 func TestConfigUpdatesExisting(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("PROGRAMDATA", dir)
+	t.Setenv("SERV_CONFIG_DIR", dir)
 
 	existing := &api.ServiceConfig{Name: "myapp", Executable: os.Args[0]}
 	saveTestConfig(t, "myapp", existing)
