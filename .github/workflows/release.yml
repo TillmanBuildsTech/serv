@@ -85,6 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Generate GitHub App token
         id: app_token
@@ -139,7 +140,13 @@ jobs:
           generate_release_notes: true
           token: ${{ steps.app_token.outputs.token }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Update npm to a version supporting trusted publishing
+        run: npm install -g npm@latest
+
       - name: Create npmjs.org release
-        run: |
-          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          npm publish --access public
+        run: npm publish --access public
+        working-directory: packaging/npm/serv
