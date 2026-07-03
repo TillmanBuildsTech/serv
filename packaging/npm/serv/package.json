@@ -1,6 +1,6 @@
 {
     "name": "@tillmanbuildstech/serv",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Cross-platform Windows service / systemd / launchd process supervisor",
     "homepage": "https://github.com/TillmanBuildsTech/serv",
     "license": "MIT",
