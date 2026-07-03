@@ -80,6 +80,18 @@ func findPlistPath(name string) (path string, userLevel bool, err error) {
 	return "", false, fmt.Errorf("service %q not found", name)
 }
 
+// resolveLabel maps a user-supplied service name to a launchd label. If name
+// corresponds to a serv-managed job (one created via Install), the
+// com.serv.-prefixed label is used; otherwise name is treated as the literal
+// label of a pre-existing launchd job, allowing serv to query and control
+// jobs it did not install.
+func resolveLabel(name string) string {
+	if _, _, err := findPlistPath(name); err == nil {
+		return label(name)
+	}
+	return name
+}
+
 func launchctl(args ...string) (string, error) {
 	out, err := runCmd("launchctl", args...)
 	if err != nil {
@@ -146,13 +158,13 @@ func (d *darwinManager) Remove(name string) error {
 
 // Start starts a stopped service via launchctl.
 func (d *darwinManager) Start(name string) error {
-	_, err := launchctl("start", label(name))
+	_, err := launchctl("start", resolveLabel(name))
 	return err
 }
 
 // Stop stops a running service via launchctl.
 func (d *darwinManager) Stop(name string) error {
-	_, err := launchctl("stop", label(name))
+	_, err := launchctl("stop", resolveLabel(name))
 	return err
 }
 
@@ -166,7 +178,7 @@ func (d *darwinManager) Restart(name string) error {
 
 // Status queries launchd for the current state of a service.
 func (d *darwinManager) Status(name string) (ServiceStatus, error) {
-	out, err := launchctl("list", label(name))
+	out, err := launchctl("list", resolveLabel(name))
 	if err != nil {
 		return ServiceStatus{}, fmt.Errorf("service %q not found: %w", name, err)
 	}
@@ -186,7 +198,8 @@ func (d *darwinManager) Status(name string) (ServiceStatus, error) {
 	}, nil
 }
 
-// List returns information about all Serv-managed launchd jobs.
+// List returns information about all launchd jobs on the system, including
+// ones not installed by serv.
 func (d *darwinManager) List() ([]ServiceInfo, error) {
 	out, err := launchctl("list")
 	if err != nil {
@@ -204,7 +217,7 @@ func (d *darwinManager) List() ([]ServiceInfo, error) {
 			continue
 		}
 		pidField, statusField, jobLabel := fields[0], fields[1], fields[2]
-		if pidField == "PID" || !strings.HasPrefix(jobLabel, "com.serv.") {
+		if pidField == "PID" {
 			continue
 		}
 

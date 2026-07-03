@@ -10,7 +10,7 @@ import (
 func newListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
-		Short: "List all Serv-managed services",
+		Short: "List all services on the system",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			services, err := managerFactory().List()
@@ -20,7 +20,7 @@ func newListCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			if len(services) == 0 {
-				fmt.Fprintln(out, "No services installed.")
+				fmt.Fprintln(out, "No services found.")
 				return nil
 			}
 

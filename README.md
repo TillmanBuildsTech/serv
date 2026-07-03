@@ -50,7 +50,7 @@ Exe:    /path/to/myapp
 Config: /etc/serv/myapp/config.yaml
 ```
 
-List all Serv-managed services, and stop/remove one when you're done:
+List all services on the system, and stop/remove one you manage with serv when you're done:
 
 ```sh
 serv list
