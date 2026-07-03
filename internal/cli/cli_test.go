@@ -251,8 +251,8 @@ func TestStatusNoServConfig(t *testing.T) {
 	if strings.Contains(out, "Config:") {
 		t.Errorf("status output should not show Config for a service with no serv config; got:\n%s", out)
 	}
-	if !strings.Contains(out, "Exe:    -") {
-		t.Errorf("status output should show Exe as \"-\" for a service with no serv config; got:\n%s", out)
+	if strings.Contains(out, "Exe:") {
+		t.Errorf("status output should not show Exe for a service with no serv config; got:\n%s", out)
 	}
 }
 

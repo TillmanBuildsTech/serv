@@ -191,10 +191,17 @@ func (d *darwinManager) Status(name string) (ServiceStatus, error) {
 		state = "running"
 	}
 
+	var detail []DetailField
+	if path, _, err := findPlistPath(name); err == nil {
+		detail = append(detail, DetailField{Label: "Loaded", Value: path})
+	}
+	detail = append(detail, DetailField{Label: "Label", Value: resolveLabel(name)})
+
 	return ServiceStatus{
 		State:    state,
 		PID:      pid,
 		ExitCode: exitCode,
+		Detail:   detail,
 	}, nil
 }
 

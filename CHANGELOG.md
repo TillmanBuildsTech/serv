@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.6]
+
+### Added
+
+- On Linux, `serv status` now also reports systemd's own native detail for a
+  service (`Loaded`, `Since`, `Invocation`, `TriggeredBy`, `Docs`, `Tasks`,
+  `Memory`, `CPU`, `CGroup`), the same information `systemctl status` shows,
+  so managing a systemd-backed service through `serv` doesn't require also
+  running `systemctl status` to see it. On macOS, `serv status` similarly
+  reports the backing launchd plist path and label.
+
+### Fixed
+
+- `serv status` no longer prints an `Exe:` line for services that have no
+  serv-authored config file, matching the existing `Config:` behavior. On
+  Linux and macOS in particular, an `Exe: -` line for a service serv didn't
+  install (e.g. `ssh`, managed natively by systemd/launchd) was noise that
+  isn't part of what those native tools report.
+
 ## [0.1.5]
 
 ### Fixed

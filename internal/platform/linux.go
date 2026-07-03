@@ -131,9 +131,16 @@ func (l *linuxManager) Restart(name string) error {
 	return err
 }
 
+// statusProperties lists the systemd unit properties fetched for `serv
+// status`, matching what `systemctl status` itself reports so users don't
+// need to run both commands to see the same information.
+const statusProperties = "LoadState,ActiveState,SubState,MainPID,ExecMainStatus," +
+	"FragmentPath,UnitFileState,ActiveEnterTimestamp,InvocationID," +
+	"TriggeredBy,Documentation,TasksCurrent,TasksMax,MemoryCurrent,CPUUsageNSec,ControlGroup"
+
 // Status queries systemd for the current state of a service.
 func (l *linuxManager) Status(name string) (ServiceStatus, error) {
-	out, err := systemctl("show", resolveUnitName(name), "--property=LoadState,ActiveState,SubState,MainPID,ExecMainStatus")
+	out, err := systemctl("show", resolveUnitName(name), "--property="+statusProperties)
 	if err != nil {
 		return ServiceStatus{}, err
 	}
@@ -150,7 +157,78 @@ func (l *linuxManager) Status(name string) (ServiceStatus, error) {
 		State:    mapSystemdState(props["ActiveState"], props["SubState"]),
 		PID:      pid,
 		ExitCode: exitCode,
+		Detail:   systemdDetail(props),
 	}, nil
+}
+
+// systemdDetail builds the platform-native detail fields shown alongside a
+// service's status, mirroring the fields `systemctl status` prints.
+func systemdDetail(props map[string]string) []DetailField {
+	var detail []DetailField
+	add := func(label, value string) {
+		if value == "" {
+			return
+		}
+		detail = append(detail, DetailField{Label: label, Value: value})
+	}
+
+	if loaded := props["FragmentPath"]; loaded != "" {
+		enabled := props["UnitFileState"]
+		if enabled != "" {
+			loaded = fmt.Sprintf("%s; %s", loaded, enabled)
+		}
+		add("Loaded", loaded)
+	}
+	add("Since", props["ActiveEnterTimestamp"])
+	add("Invocation", props["InvocationID"])
+	add("TriggeredBy", props["TriggeredBy"])
+	add("Docs", props["Documentation"])
+
+	if tasksCur := props["TasksCurrent"]; tasksCur != "" && tasksCur != "18446744073709551615" {
+		tasks := tasksCur
+		if max := props["TasksMax"]; max != "" && max != "18446744073709551615" {
+			tasks = fmt.Sprintf("%s (limit: %s)", tasksCur, max)
+		}
+		add("Tasks", tasks)
+	}
+	if mem := props["MemoryCurrent"]; mem != "" && mem != "18446744073709551615" {
+		add("Memory", formatBytes(mem))
+	}
+	if cpu := props["CPUUsageNSec"]; cpu != "" && cpu != "18446744073709551615" {
+		add("CPU", formatCPUNSec(cpu))
+	}
+	add("CGroup", props["ControlGroup"])
+
+	return detail
+}
+
+// formatBytes renders a byte count string as a human-readable size.
+func formatBytes(nStr string) string {
+	n, err := strconv.ParseFloat(nStr, 64)
+	if err != nil {
+		return nStr
+	}
+	units := []string{"B", "K", "M", "G", "T"}
+	i := 0
+	for n >= 1024 && i < len(units)-1 {
+		n /= 1024
+		i++
+	}
+	return fmt.Sprintf("%.1f%s", n, units[i])
+}
+
+// formatCPUNSec renders a nanosecond CPU time string as a human-readable
+// duration.
+func formatCPUNSec(nStr string) string {
+	n, err := strconv.ParseFloat(nStr, 64)
+	if err != nil {
+		return nStr
+	}
+	ms := n / 1e6
+	if ms < 1000 {
+		return fmt.Sprintf("%.0fms", ms)
+	}
+	return fmt.Sprintf("%.3fs", ms/1000)
 }
 
 // List returns information about all systemd services on the system,

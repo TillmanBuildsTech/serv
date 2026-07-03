@@ -12,6 +12,17 @@ type ServiceStatus struct {
 	PID int
 	// ExitCode is the last exit code of the service process.
 	ExitCode int
+	// Detail holds additional native fields reported by the underlying
+	// platform service manager (e.g. systemd's Loaded/TriggeredBy/CGroup on
+	// Linux), in display order, so `serv status` surfaces the same
+	// information as the platform's own tooling without a second command.
+	Detail []DetailField
+}
+
+// DetailField is a single label/value pair of platform-native status detail.
+type DetailField struct {
+	Label string
+	Value string
 }
 
 // ServiceInfo provides summary information about an installed service.
