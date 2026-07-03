@@ -1,0 +1,9 @@
+{
+    "version": "0.1.2",
+    "serv-darwin-amd64.tar.gz": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE",
+    "serv-darwin-arm64.tar.gz": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE",
+    "serv-linux-amd64.tar.gz": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE",
+    "serv-linux-arm64.tar.gz": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE",
+    "serv-windows-amd64.zip": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE",
+    "serv-windows-arm64.zip": "REPLACE_WITH_SHA256_OF_RELEASE_ARCHIVE"
+}
