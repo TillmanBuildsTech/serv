@@ -2,6 +2,37 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.5]
+
+### Fixed
+
+- `serv status` no longer prints a `Config:` path for services that have no
+  serv-authored config file (e.g. services discovered on the system but not
+  installed via `serv install`); the line is now omitted instead of pointing
+  at a file that doesn't exist.
+
+## [0.1.4]
+
+### Fixed
+
+- `list`, `status`, `start`, `stop`, and `restart` now consistently discover
+  and control services on the whole system, not just ones `serv` itself
+  installed, on all three platforms. Previously Windows leaked nearly every
+  SCM service due to an overly broad `serv` substring filter (`"serv"` also
+  matches the common word "service"), while Linux and macOS were scoped only
+  to serv-managed units/jobs — the platforms disagreed and Linux/macOS `list`
+  looked broken by comparison. `install`/`remove`/`update-config` still only
+  operate on services `serv` created.
+- Windows `remove`/`update-config` now refuse to touch a service that wasn't
+  installed by serv, replacing the removed (and unreliable) list filter with
+  an explicit safety check now that `list` surfaces every SCM service.
+
+## [0.1.3]
+
+### Changed
+
+- Improved the release workflow's npm publishing step.
+
 ## [0.1.2]
 
 ### Added

@@ -29,8 +29,10 @@ func newStatusCmd() *cobra.Command {
 
 			configPath := config.DefaultConfigPath(name)
 			exe := "-"
+			hasConfig := false
 			if cfg, err := config.Load(configPath); err == nil {
 				exe = cfg.Executable
+				hasConfig = true
 			}
 
 			uptime := "-"
@@ -46,7 +48,9 @@ func newStatusCmd() *cobra.Command {
 			fmt.Fprintf(out, "PID:    %s\n", pidString(status.PID))
 			fmt.Fprintf(out, "Uptime: %s\n", uptime)
 			fmt.Fprintf(out, "Exe:    %s\n", exe)
-			fmt.Fprintf(out, "Config: %s\n", configPath)
+			if hasConfig {
+				fmt.Fprintf(out, "Config: %s\n", configPath)
+			}
 			return nil
 		},
 	}
