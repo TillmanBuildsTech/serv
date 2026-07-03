@@ -199,6 +199,10 @@ func TestStartStopRestart(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("SERV_CONFIG_DIR", dir)
+	saveTestConfig(t, "myapp", &api.ServiceConfig{Name: "myapp", Executable: os.Args[0]})
+
 	withMockManager(t, &platform.MockManager{
 		StatusFunc: func(name string) (platform.ServiceStatus, error) {
 			return platform.ServiceStatus{State: "running", PID: 4242}, nil
@@ -222,6 +226,33 @@ func TestStatus(t *testing.T) {
 	}
 	if !strings.Contains(out, config.DefaultConfigPath("myapp")) {
 		t.Errorf("status output missing config path; got:\n%s", out)
+	}
+}
+
+func TestStatusNoServConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("SERV_CONFIG_DIR", dir)
+
+	withMockManager(t, &platform.MockManager{
+		StatusFunc: func(name string) (platform.ServiceStatus, error) {
+			return platform.ServiceStatus{State: "running", PID: 4242}, nil
+		},
+	})
+
+	origStartTime := processStartTime
+	processStartTime = func(pid int) (time.Time, bool) { return time.Time{}, false }
+	t.Cleanup(func() { processStartTime = origStartTime })
+
+	out, err := runCmd(t, "status", "caddy")
+	if err != nil {
+		t.Fatalf("status: unexpected error: %v", err)
+	}
+
+	if strings.Contains(out, "Config:") {
+		t.Errorf("status output should not show Config for a service with no serv config; got:\n%s", out)
+	}
+	if !strings.Contains(out, "Exe:    -") {
+		t.Errorf("status output should show Exe as \"-\" for a service with no serv config; got:\n%s", out)
 	}
 }
 
