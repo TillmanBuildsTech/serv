@@ -28,7 +28,7 @@ func newStatusCmd() *cobra.Command {
 			}
 
 			configPath := config.DefaultConfigPath(name)
-			exe := "-"
+			var exe string
 			hasConfig := false
 			if cfg, err := config.Load(configPath); err == nil {
 				exe = cfg.Executable
@@ -47,11 +47,24 @@ func newStatusCmd() *cobra.Command {
 			fmt.Fprintf(out, "State:  %s\n", status.State)
 			fmt.Fprintf(out, "PID:    %s\n", pidString(status.PID))
 			fmt.Fprintf(out, "Uptime: %s\n", uptime)
-			fmt.Fprintf(out, "Exe:    %s\n", exe)
 			if hasConfig {
+				fmt.Fprintf(out, "Exe:    %s\n", exe)
 				fmt.Fprintf(out, "Config: %s\n", configPath)
+			}
+			for _, d := range status.Detail {
+				fmt.Fprintf(out, "%s %s\n", padLabel(d.Label), d.Value)
 			}
 			return nil
 		},
 	}
+}
+
+// detailLabelWidth is wide enough to fit the longest detail label ("TriggeredBy:")
+// so platform-native detail fields line up in a column, like the fixed-width
+// labels above them.
+const detailLabelWidth = 12
+
+// padLabel formats a detail field label as "Label:" padded to detailLabelWidth.
+func padLabel(label string) string {
+	return fmt.Sprintf("%-*s", detailLabelWidth, label+":")
 }
