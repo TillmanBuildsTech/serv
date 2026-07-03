@@ -86,6 +86,15 @@ func TestLinuxManagerInstallAlreadyExists(t *testing.T) {
 }
 
 func TestLinuxManagerStartStopRestart(t *testing.T) {
+	dir := t.TempDir()
+	origDir := systemdUnitDir
+	systemdUnitDir = dir
+	t.Cleanup(func() { systemdUnitDir = origDir })
+
+	if err := os.WriteFile(filepath.Join(dir, "serv-myapp.service"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	l := &linuxManager{}
 
 	var calls [][]string
@@ -115,6 +124,29 @@ func TestLinuxManagerStartStopRestart(t *testing.T) {
 		if strings.Join(calls[i], " ") != strings.Join(want[i], " ") {
 			t.Errorf("call %d = %v, want %v", i, calls[i], want[i])
 		}
+	}
+}
+
+func TestLinuxManagerStartUnmanagedService(t *testing.T) {
+	dir := t.TempDir()
+	origDir := systemdUnitDir
+	systemdUnitDir = dir
+	t.Cleanup(func() { systemdUnitDir = origDir })
+
+	l := &linuxManager{}
+
+	var calls [][]string
+	withMockRunCmd(t, &calls, func(name string, args ...string) (string, error) {
+		return "", nil
+	})
+
+	if err := l.Start("caddy"); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	want := "systemctl start caddy.service"
+	if len(calls) != 1 || strings.Join(calls[0], " ") != want {
+		t.Fatalf("calls = %v, want [%s]", calls, want)
 	}
 }
 
@@ -164,7 +196,8 @@ func TestLinuxManagerList(t *testing.T) {
 		call++
 		if call == 1 {
 			return "serv-myapp.service loaded active running My App\n" +
-				"serv-other.service loaded inactive dead Other App\n", nil
+				"serv-other.service loaded inactive dead Other App\n" +
+				"caddy.service loaded active running Caddy\n", nil
 		}
 		return "MainPID=4242\n", nil
 	})
@@ -173,14 +206,17 @@ func TestLinuxManagerList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if len(list) != 2 {
-		t.Fatalf("List: got %d entries, want 2", len(list))
+	if len(list) != 3 {
+		t.Fatalf("List: got %d entries, want 3", len(list))
 	}
 	if list[0].Name != "myapp" || list[0].State != "running" || list[0].PID != 4242 {
 		t.Errorf("List[0] = %+v", list[0])
 	}
 	if list[1].Name != "other" || list[1].State != "stopped" {
 		t.Errorf("List[1] = %+v", list[1])
+	}
+	if list[2].Name != "caddy" || list[2].State != "running" {
+		t.Errorf("List[2] = %+v (expected unmanaged unit to be listed with raw name)", list[2])
 	}
 }
 

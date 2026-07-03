@@ -80,6 +80,14 @@ func (w *windowsManager) Remove(name string) error {
 	}
 	defer s.Close()
 
+	cfg, err := s.Config()
+	if err != nil {
+		return fmt.Errorf("reading config for service %q: %w", name, translateWinErr(err))
+	}
+	if !isServManaged(cfg) {
+		return fmt.Errorf("service %q was not installed by serv and cannot be removed", name)
+	}
+
 	if err := s.Delete(); err != nil {
 		return fmt.Errorf("removing service %q: %w", name, translateWinErr(err))
 	}
@@ -170,7 +178,8 @@ func (w *windowsManager) Status(name string) (ServiceStatus, error) {
 	}, nil
 }
 
-// List returns information about all Serv-managed services.
+// List returns information about all services registered with the SCM,
+// including ones not installed by serv.
 func (w *windowsManager) List() ([]ServiceInfo, error) {
 	m, err := connectSCM()
 	if err != nil {
@@ -191,7 +200,7 @@ func (w *windowsManager) List() ([]ServiceInfo, error) {
 		}
 
 		cfg, err := s.Config()
-		if err != nil || !strings.Contains(strings.ToLower(cfg.BinaryPathName), "serv") {
+		if err != nil {
 			s.Close()
 			continue
 		}
@@ -211,6 +220,16 @@ func (w *windowsManager) List() ([]ServiceInfo, error) {
 	}
 
 	return infos, nil
+}
+
+// isServManaged reports whether cfg's binary path points at the currently
+// running serv executable, meaning the service was installed by serv itself.
+func isServManaged(cfg mgr.Config) bool {
+	exePath, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(cfg.BinaryPathName, exePath)
 }
 
 // UpdateConfig applies a new configuration to an existing service.
@@ -234,6 +253,9 @@ func (w *windowsManager) UpdateConfig(name string, cfg *api.ServiceConfig) error
 	current, err := s.Config()
 	if err != nil {
 		return fmt.Errorf("reading current config for service %q: %w", name, translateWinErr(err))
+	}
+	if !isServManaged(current) {
+		return fmt.Errorf("service %q was not installed by serv and cannot be updated", name)
 	}
 
 	current.DisplayName = cfg.DisplayName

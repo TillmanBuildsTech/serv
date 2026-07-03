@@ -272,7 +272,7 @@ func TestListEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "No services installed") {
+	if !strings.Contains(out, "No services found") {
 		t.Errorf("output = %q, want empty-list message", out)
 	}
 }

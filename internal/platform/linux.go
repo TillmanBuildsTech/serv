@@ -33,6 +33,21 @@ type linuxManager struct{}
 func unitName(name string) string { return fmt.Sprintf("serv-%s.service", name) }
 func unitPath(name string) string { return filepath.Join(systemdUnitDir, unitName(name)) }
 
+// resolveUnitName maps a user-supplied service name to a systemd unit. If
+// name corresponds to a serv-managed unit (one created via Install), the
+// serv-prefixed unit is used; otherwise name is treated as the literal unit
+// name of a pre-existing systemd service, allowing serv to query and control
+// services it did not install.
+func resolveUnitName(name string) string {
+	if _, err := os.Stat(unitPath(name)); err == nil {
+		return unitName(name)
+	}
+	if strings.HasSuffix(name, ".service") {
+		return name
+	}
+	return name + ".service"
+}
+
 func systemctl(args ...string) (string, error) {
 	out, err := runCmd("systemctl", args...)
 	if err != nil {
@@ -100,25 +115,25 @@ func (l *linuxManager) Remove(name string) error {
 
 // Start starts a stopped service via systemctl.
 func (l *linuxManager) Start(name string) error {
-	_, err := systemctl("start", unitName(name))
+	_, err := systemctl("start", resolveUnitName(name))
 	return err
 }
 
 // Stop stops a running service via systemctl.
 func (l *linuxManager) Stop(name string) error {
-	_, err := systemctl("stop", unitName(name))
+	_, err := systemctl("stop", resolveUnitName(name))
 	return err
 }
 
 // Restart stops and starts a service via systemctl.
 func (l *linuxManager) Restart(name string) error {
-	_, err := systemctl("restart", unitName(name))
+	_, err := systemctl("restart", resolveUnitName(name))
 	return err
 }
 
 // Status queries systemd for the current state of a service.
 func (l *linuxManager) Status(name string) (ServiceStatus, error) {
-	out, err := systemctl("show", unitName(name), "--property=LoadState,ActiveState,SubState,MainPID,ExecMainStatus")
+	out, err := systemctl("show", resolveUnitName(name), "--property=LoadState,ActiveState,SubState,MainPID,ExecMainStatus")
 	if err != nil {
 		return ServiceStatus{}, err
 	}
@@ -138,9 +153,10 @@ func (l *linuxManager) Status(name string) (ServiceStatus, error) {
 	}, nil
 }
 
-// List returns information about all Serv-managed systemd units.
+// List returns information about all systemd services on the system,
+// including ones not installed by serv.
 func (l *linuxManager) List() ([]ServiceInfo, error) {
-	out, err := systemctl("list-units", "--type=service", "--all", "--no-legend", "--no-pager", "--plain", "serv-*.service")
+	out, err := systemctl("list-units", "--type=service", "--all", "--no-legend", "--no-pager", "--plain")
 	if err != nil {
 		return nil, err
 	}
