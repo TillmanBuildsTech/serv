@@ -27,8 +27,9 @@ func newStatusCmd() *cobra.Command {
 				return fmt.Errorf("getting status for service %q: %w", name, err)
 			}
 
+			configPath := config.DefaultConfigPath(name)
 			exe := "-"
-			if cfg, err := config.Load(config.DefaultConfigPath(name)); err == nil {
+			if cfg, err := config.Load(configPath); err == nil {
 				exe = cfg.Executable
 			}
 
@@ -45,6 +46,7 @@ func newStatusCmd() *cobra.Command {
 			fmt.Fprintf(out, "PID:    %s\n", pidString(status.PID))
 			fmt.Fprintf(out, "Uptime: %s\n", uptime)
 			fmt.Fprintf(out, "Exe:    %s\n", exe)
+			fmt.Fprintf(out, "Config: %s\n", configPath)
 			return nil
 		},
 	}

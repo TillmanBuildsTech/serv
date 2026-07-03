@@ -86,7 +86,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Generate GitHub App token
+        id: app_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.TBT_APP_ID }}
+          private_key: ${{ secrets.TBT_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.app_token.outputs.token }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -107,3 +117,24 @@ jobs:
           name: v${{ needs.check.outputs.version }}
           files: out/*
           generate_release_notes: true
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Update packaging manifests
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: python3 scripts/update_packaging_version.py "$VERSION" out
+
+      - name: Commit packaging manifest updates
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+          APP_ID: ${{ secrets.TBT_APP_ID }}
+        run: |
+          git config user.name "tbt-devops[bot]"
+          git config user.email "${APP_ID}+tbt-devops[bot]@users.noreply.github.com"
+          git add packaging/
+          if git diff --cached --quiet; then
+            echo "No packaging changes to commit"
+          else
+            git commit -m "chore: bump packaging manifests to v${VERSION}"
+            git push origin HEAD:main
+          fi

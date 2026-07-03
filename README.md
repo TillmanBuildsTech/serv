@@ -47,6 +47,7 @@ State:  running
 PID:    12345
 Uptime: 1m30s
 Exe:    /path/to/myapp
+Config: /etc/serv/myapp/config.yaml
 ```
 
 List all Serv-managed services, and stop/remove one when you're done:
@@ -63,6 +64,12 @@ account configuration — write a YAML config and install from it:
 ```sh
 serv install --config myapp.yaml
 ```
+
+Whichever way you install, serv writes the resulting config to a per-OS
+system directory (e.g. `C:\ProgramData\serv\myapp\config.yaml` on Windows,
+`/etc/serv/myapp/config.yaml` on Linux) — see
+[where config lives](docs/configuration.md#where-config-lives) for the full
+list and how to update it afterward.
 
 See the [configuration reference](docs/configuration.md) for every field,
 and [docs/hooks.md](docs/hooks.md) for the lifecycle hook system.
