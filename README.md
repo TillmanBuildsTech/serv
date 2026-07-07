@@ -1,6 +1,5 @@
 # Serv
-
-![serv](.github\assets\header.png)
+![serv](https://github.com/TillmanBuildsTech/serv/blob/main/.github/assets/header.png)
 
 **Serv** installs and supervises a long-running executable as a native Windows
 service (via the SCM), or a systemd/launchd unit on Linux/macOS. It's a
