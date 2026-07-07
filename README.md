@@ -1,4 +1,6 @@
 # Serv
+[![CI](https://github.com/TillmanBuildsTech/serv/actions/workflows/ci.yml/badge.svg)](https://github.com/TillmanBuildsTech/serv/actions/workflows/ci.yml)
+[![Release](https://github.com/TillmanBuildsTech/serv/actions/workflows/release.yml/badge.svg)](https://github.com/TillmanBuildsTech/serv/actions/workflows/release.yml)
 ![serv](https://github.com/TillmanBuildsTech/serv/blob/main/.github/assets/header.png)
 
 **Serv** installs and supervises a long-running executable as a native Windows
