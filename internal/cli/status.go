@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -28,12 +30,7 @@ func newStatusCmd() *cobra.Command {
 			}
 
 			configPath := config.DefaultConfigPath(name)
-			var exe string
-			hasConfig := false
-			if cfg, err := config.Load(configPath); err == nil {
-				exe = cfg.Executable
-				hasConfig = true
-			}
+			cfg, cfgErr := config.Load(configPath)
 
 			uptime := "-"
 			if status.PID > 0 {
@@ -47,9 +44,14 @@ func newStatusCmd() *cobra.Command {
 			fmt.Fprintf(out, "State:  %s\n", status.State)
 			fmt.Fprintf(out, "PID:    %s\n", pidString(status.PID))
 			fmt.Fprintf(out, "Uptime: %s\n", uptime)
-			if hasConfig {
-				fmt.Fprintf(out, "Exe:    %s\n", exe)
+			switch {
+			case cfgErr == nil:
+				fmt.Fprintf(out, "Exe:    %s\n", cfg.Executable)
 				fmt.Fprintf(out, "Config: %s\n", configPath)
+			case errors.Is(cfgErr, os.ErrNotExist):
+				// No serv-authored config for this service; nothing to show.
+			default:
+				fmt.Fprintf(out, "Config: %s (error: %v)\n", configPath, cfgErr)
 			}
 			for _, d := range status.Detail {
 				fmt.Fprintf(out, "%s %s\n", padLabel(d.Label), d.Value)

@@ -299,6 +299,8 @@ func translateWinErr(err error) error {
 		return fmt.Errorf("service is already running: %w", err)
 	case errors.Is(err, windows.ERROR_SERVICE_NOT_ACTIVE):
 		return fmt.Errorf("service is not running: %w", err)
+	case errors.Is(err, windows.ERROR_SERVICE_REQUEST_TIMEOUT):
+		return fmt.Errorf("service process did not report running in time — check its config file and logs for startup errors: %w", err)
 	default:
 		return err
 	}

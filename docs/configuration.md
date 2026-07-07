@@ -7,6 +7,51 @@ one by hand and pass it with `serv install --config service.yaml`.
 Durations (anywhere a field's type is noted as `duration`) are Go duration
 strings, e.g. `"1500ms"`, `"5s"`, `"2m"`, `"1h"`.
 
+## Command-line flags
+
+For simple services you don't need a `config.yaml` at all — `serv install`
+accepts the same core fields as flags:
+
+```sh
+serv install --name myapp --exe C:\Apps\myapp\myapp.exe --workdir C:\Apps\myapp \
+  --args "--port,8080" --display-name "My Application" --start-type auto
+```
+
+| Flag | Equivalent config field |
+|---|---|
+| `--name` | `name` |
+| `--exe` | `executable` |
+| `--args` | `arguments` (comma-separated, e.g. `--args "-u,main.py"`) |
+| `--workdir` | `working_directory` |
+| `--display-name` | `display_name` |
+| `--description` | `description` |
+| `--start-type` | `start_type` |
+| `--config` | loads a full YAML file instead of/in addition to the flags above |
+
+Flags and `--config` can be combined: the file is loaded first, then any
+flags you explicitly pass override just those fields. Fields with no flag
+equivalent (`stop_method`, `restart`, `exit_actions`, `log_rotation`,
+`account`, `hooks`, etc.) can only be set via `--config`.
+
+`serv config <name> [flags]` takes the same flags (minus `--config`) to
+update an already-installed service without hand-editing its file:
+
+```sh
+serv config myapp --start-type manual --args "--port,9090"
+```
+
+Other lifecycle commands don't take service-definition flags, just the
+service name:
+
+```sh
+serv start myapp
+serv stop myapp
+serv restart myapp
+serv status myapp
+serv remove myapp
+serv list
+```
+
 ## Where config lives
 
 `serv install` writes a `config.yaml` for the service to a per-OS system
@@ -213,6 +258,10 @@ arguments: []
 working_directory: C:\Apps\myapp
 ```
 
+```sh
+serv install --name myapp --exe C:\Apps\myapp\myapp.exe --workdir C:\Apps\myapp
+```
+
 **Node.js / npm** — point at `node` directly rather than `npm`, so signals
 and exit codes come from your app instead of being lost through npm's
 wrapper process:
@@ -224,6 +273,61 @@ arguments:
 working_directory: C:\Apps\myapp
 environment:
   NODE_ENV: production
+```
+
+```sh
+serv install --name myapp --exe "C:\Program Files\nodejs\node.exe" \
+  --args "C:\Apps\myapp\server.js" --workdir C:\Apps\myapp
+```
+
+Note: `environment` has no CLI flag equivalent — set `NODE_ENV` etc. via
+`--config` or by hand-editing the installed `config.yaml`.
+
+**Node.js (TypeScript via `ts-node`)** — point at `node` and pass `ts-node`'s
+CLI entry point from `node_modules`, rather than invoking the `ts-node`
+shim script directly:
+
+```yaml
+executable: C:\Program Files\nodejs\node.exe   # or /usr/bin/node
+arguments:
+  - C:\Apps\myapp\node_modules\ts-node\dist\bin.js
+  - C:\Apps\myapp\src\server.ts
+working_directory: C:\Apps\myapp
+environment:
+  NODE_ENV: production
+```
+
+```sh
+serv install --name myapp --exe "C:\Program Files\nodejs\node.exe" \
+  --args "C:\Apps\myapp\node_modules\ts-node\dist\bin.js,C:\Apps\myapp\src\server.ts" \
+  --workdir C:\Apps\myapp
+```
+
+For production it's usually better to run `tsc` as a build step and deploy
+the compiled `dist/server.js`, pointing `executable`/`arguments` at that like
+the plain Node.js example above — it starts faster and avoids shipping
+`ts-node` and TypeScript itself to production.
+
+**Node.js (`npm run <script>`)** — if what you actually need to run is a
+script defined in `package.json` rather than a single entry file, `npm`
+itself is still not a good fit for `executable` (see above), but `npm.cmd`
+can be used as a last resort if you can't resolve the script to a direct
+`node` invocation. On Windows, `npm.cmd` is itself a wrapper batch file, so
+`kill_process_tree: true` (the default) matters here — otherwise stopping
+the service leaves the real `node` child running:
+
+```yaml
+executable: C:\Program Files\nodejs\npm.cmd
+arguments:
+  - run
+  - start
+working_directory: C:\Apps\myapp
+kill_process_tree: true
+```
+
+```sh
+serv install --name myapp --exe "C:\Program Files\nodejs\npm.cmd" \
+  --args "run,start" --workdir C:\Apps\myapp
 ```
 
 **Python**:
@@ -238,6 +342,11 @@ environment:
   PYTHONUNBUFFERED: "1"
 ```
 
+```sh
+serv install --name myapp --exe C:\Apps\myapp\venv\Scripts\python.exe \
+  --args "-u,C:\Apps\myapp\main.py" --workdir C:\Apps\myapp
+```
+
 **Java (jar)**:
 
 ```yaml
@@ -247,6 +356,11 @@ arguments:
   - C:\Apps\myapp\myapp.jar
   - --server.port=8080
 working_directory: C:\Apps\myapp
+```
+
+```sh
+serv install --name myapp --exe "C:\Program Files\Java\jdk-21\bin\java.exe" \
+  --args "-jar,C:\Apps\myapp\myapp.jar,--server.port=8080" --workdir C:\Apps\myapp
 ```
 
 **.NET** (self-contained executables work like Go; framework-dependent
@@ -259,6 +373,11 @@ arguments:
 working_directory: C:\Apps\myapp
 ```
 
+```sh
+serv install --name myapp --exe "C:\Program Files\dotnet\dotnet.exe" \
+  --args "C:\Apps\myapp\myapp.dll" --workdir C:\Apps\myapp
+```
+
 **Shell script** (Linux/macOS) — invoke the interpreter explicitly rather
 than relying on the script's shebang and executable bit:
 
@@ -267,6 +386,72 @@ executable: /bin/bash
 arguments:
   - /opt/myapp/start.sh
 working_directory: /opt/myapp
+```
+
+```sh
+serv install --name myapp --exe /bin/bash --args "/opt/myapp/start.sh" --workdir /opt/myapp
+```
+
+Or with the POSIX `/bin/sh` if the script doesn't need bash-specific features:
+
+```yaml
+executable: /bin/sh
+arguments:
+  - /opt/myapp/start.sh
+working_directory: /opt/myapp
+```
+
+```sh
+serv install --name myapp --exe /bin/sh --args "/opt/myapp/start.sh" --workdir /opt/myapp
+```
+
+**Shell script (Windows)** — Windows has no `/bin/bash`. Point `executable`
+at a bash you've installed instead, e.g. Git for Windows' bundled bash or
+WSL's:
+
+```yaml
+executable: C:\Program Files\Git\bin\bash.exe   # Git for Windows
+arguments:
+  - .\ping.sh
+working_directory: C:\Apps\myapp
+```
+
+```sh
+serv install --name myapp --exe "C:\Program Files\Git\bin\bash.exe" \
+  --args ".\ping.sh" --workdir C:\Apps\myapp
+```
+
+If you're using WSL, run the script through `wsl.exe` instead, since the
+script and any paths it references need to resolve inside the Linux
+filesystem:
+
+```yaml
+executable: C:\Windows\System32\wsl.exe
+arguments:
+  - bash
+  - /opt/myapp/start.sh
+working_directory: C:\Apps\myapp
+```
+
+```sh
+serv install --name myapp --exe C:\Windows\System32\wsl.exe \
+  --args "bash,/opt/myapp/start.sh" --workdir C:\Apps\myapp
+```
+
+Or, if the script doesn't rely on bash-specific syntax, skip bash entirely
+and run it with PowerShell:
+
+```yaml
+executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+arguments:
+  - -File
+  - .\ping.ps1
+working_directory: C:\Apps\myapp
+```
+
+```sh
+serv install --name myapp --exe "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" \
+  --args "-File,.\ping.ps1" --workdir C:\Apps\myapp
 ```
 
 ## Example: complete config

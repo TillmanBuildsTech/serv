@@ -14,7 +14,7 @@ func newRestartCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			if err := managerFactory().Restart(name); err != nil {
-				return fmt.Errorf("restarting service %q: %w", name, err)
+				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Service %q restarted.\n", name)
 			return nil
