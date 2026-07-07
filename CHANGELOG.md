@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.8]
+
+### Fixed
+
+- On Windows, `serv status` now prints a note when a service is in the
+  `paused` state, clarifying that this means the supervised process keeps
+  exiting and serv is restarting it with backoff — `paused` is only ever set
+  by serv's own restart-crash-loop handling, so without this note it reads
+  like the service was manually paused rather than crash-looping.
+
 ## [0.1.7]
 
 ### Fixed

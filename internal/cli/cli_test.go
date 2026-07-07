@@ -302,6 +302,23 @@ func TestStatusCorruptConfig(t *testing.T) {
 	}
 }
 
+func TestStatusPausedShowsRestartNote(t *testing.T) {
+	withMockManager(t, &platform.MockManager{
+		StatusFunc: func(name string) (platform.ServiceStatus, error) {
+			return platform.ServiceStatus{State: "paused", PID: 4242}, nil
+		},
+	})
+
+	out, err := runCmd(t, "status", "myapp")
+	if err != nil {
+		t.Fatalf("status: unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Note:") || !strings.Contains(out, "backing off") {
+		t.Errorf("status output should explain a paused state as a restart backoff; got:\n%s", out)
+	}
+}
+
 func TestStatusNotRunning(t *testing.T) {
 	withMockManager(t, &platform.MockManager{
 		StatusFunc: func(name string) (platform.ServiceStatus, error) {
