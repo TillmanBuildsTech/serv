@@ -197,6 +197,78 @@ recovery:
 | `run_command` | string | `""` | Command line executed for a `run_command` action. |
 | `reboot_message` | string | `""` | Message broadcast before a `reboot` action. |
 
+## Examples: common executables
+
+`executable` must be a concrete, launchable binary — not a script interpreter
+invocation shorthand like `npm start`. For runtimes that aren't already
+compiled native binaries, point `executable` at the runtime's binary and pass
+your script/entry point via `arguments`.
+
+**Go** (a compiled Go binary is just a native executable — nothing special
+needed):
+
+```yaml
+executable: C:\Apps\myapp\myapp.exe   # or /usr/local/bin/myapp on Linux/macOS
+arguments: []
+working_directory: C:\Apps\myapp
+```
+
+**Node.js / npm** — point at `node` directly rather than `npm`, so signals
+and exit codes come from your app instead of being lost through npm's
+wrapper process:
+
+```yaml
+executable: C:\Program Files\nodejs\node.exe   # or /usr/bin/node
+arguments:
+  - C:\Apps\myapp\server.js
+working_directory: C:\Apps\myapp
+environment:
+  NODE_ENV: production
+```
+
+**Python**:
+
+```yaml
+executable: C:\Apps\myapp\venv\Scripts\python.exe   # or /path/to/venv/bin/python3
+arguments:
+  - -u                        # unbuffered stdout/stderr, so logs show up promptly
+  - C:\Apps\myapp\main.py
+working_directory: C:\Apps\myapp
+environment:
+  PYTHONUNBUFFERED: "1"
+```
+
+**Java (jar)**:
+
+```yaml
+executable: C:\Program Files\Java\jdk-21\bin\java.exe   # or /usr/bin/java
+arguments:
+  - -jar
+  - C:\Apps\myapp\myapp.jar
+  - --server.port=8080
+working_directory: C:\Apps\myapp
+```
+
+**.NET** (self-contained executables work like Go; framework-dependent
+builds need the `dotnet` host):
+
+```yaml
+executable: C:\Program Files\dotnet\dotnet.exe   # or /usr/bin/dotnet
+arguments:
+  - C:\Apps\myapp\myapp.dll
+working_directory: C:\Apps\myapp
+```
+
+**Shell script** (Linux/macOS) — invoke the interpreter explicitly rather
+than relying on the script's shebang and executable bit:
+
+```yaml
+executable: /bin/bash
+arguments:
+  - /opt/myapp/start.sh
+working_directory: /opt/myapp
+```
+
 ## Example: complete config
 
 ```yaml
