@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 PackageIdentifier: TillmanBuildsTech.Serv
-PackageVersion: 0.1.6
+PackageVersion: 0.1.7
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
@@ -8,10 +8,10 @@ NestedInstallerFiles:
     PortableCommandAlias: serv
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-windows-amd64.zip
-    InstallerSha256: 89e25bc0dab9e5b94adfd2183989c2b2ea5ae892388c3c39c6ef05dd3fdb9e08
+    InstallerUrl: https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.7/serv-windows-amd64.zip
+    InstallerSha256: 16c17d0fea732e532054ff7e2cf9a60f66ec4e5ef4dc90f078bd89c96a2ab5e7
   - Architecture: arm64
-    InstallerUrl: https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-windows-arm64.zip
-    InstallerSha256: 53c89c36d4a48342af1471ce9dd93dd853b342f109f94b314ca30fdc6edad74f
+    InstallerUrl: https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.7/serv-windows-arm64.zip
+    InstallerSha256: c398fcd991e1778e4eddd29f2d13e62c82a304a23a970ae8a973b99e7695d116
 ManifestType: installer
 ManifestVersion: 1.6.0
