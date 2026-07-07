@@ -42,6 +42,9 @@ func newStatusCmd() *cobra.Command {
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "Name:   %s\n", name)
 			fmt.Fprintf(out, "State:  %s\n", status.State)
+			if status.State == "paused" {
+				fmt.Fprintf(out, "%s the process keeps exiting; serv is restarting it and backing off between attempts\n", padLabel("Note"))
+			}
 			fmt.Fprintf(out, "PID:    %s\n", pidString(status.PID))
 			fmt.Fprintf(out, "Uptime: %s\n", uptime)
 			switch {
