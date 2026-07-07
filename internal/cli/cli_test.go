@@ -198,6 +198,21 @@ func TestStartStopRestart(t *testing.T) {
 	}
 }
 
+func TestStartRestartErrorsAreNotDoubleWrapped(t *testing.T) {
+	startErr := errors.New(`starting service "myapp": the service did not respond in time`)
+	withMockManager(t, &platform.MockManager{
+		StartFunc:   func(name string) error { return startErr },
+		RestartFunc: func(name string) error { return startErr },
+	})
+
+	if _, err := runCmd(t, "start", "myapp"); err == nil || err.Error() != startErr.Error() {
+		t.Errorf("start error = %v, want %v (unwrapped, not double-prefixed)", err, startErr)
+	}
+	if _, err := runCmd(t, "restart", "myapp"); err == nil || err.Error() != startErr.Error() {
+		t.Errorf("restart error = %v, want %v (unwrapped, not double-prefixed)", err, startErr)
+	}
+}
+
 func TestStatus(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("SERV_CONFIG_DIR", dir)
@@ -253,6 +268,37 @@ func TestStatusNoServConfig(t *testing.T) {
 	}
 	if strings.Contains(out, "Exe:") {
 		t.Errorf("status output should not show Exe for a service with no serv config; got:\n%s", out)
+	}
+}
+
+func TestStatusCorruptConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("SERV_CONFIG_DIR", dir)
+
+	path := config.DefaultConfigPath("myapp")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(": not valid yaml :::"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	withMockManager(t, &platform.MockManager{
+		StatusFunc: func(name string) (platform.ServiceStatus, error) {
+			return platform.ServiceStatus{State: "stopped", PID: 0}, nil
+		},
+	})
+
+	out, err := runCmd(t, "status", "myapp")
+	if err != nil {
+		t.Fatalf("status: unexpected error: %v", err)
+	}
+
+	if strings.Contains(out, "Exe:") {
+		t.Errorf("status output should not show Exe when config fails to load; got:\n%s", out)
+	}
+	if !strings.Contains(out, "Config: "+path+" (error:") {
+		t.Errorf("status output should surface the config load error; got:\n%s", out)
 	}
 }
 

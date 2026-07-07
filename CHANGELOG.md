@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.7]
+
+### Fixed
+
+- `serv start`/`serv restart` no longer show a doubled error message (e.g.
+  `starting service "appserver": starting service "appserver": ...`) when
+  the underlying start fails; the CLI now passes the platform error through
+  instead of re-wrapping it with the same prefix.
+- On Windows, a start/restart that times out waiting for the service to
+  report itself as running (`ERROR_SERVICE_REQUEST_TIMEOUT`) now says so
+  explicitly and suggests checking the service's config file and logs,
+  instead of only showing the generic Win32 message.
+- `serv status` no longer silently hides the `Exe:`/`Config:` fields when a
+  service's config file exists but fails to load (e.g. it was corrupted or
+  left invalid YAML by an external edit). It now prints the config path
+  along with the load error, so a broken config is visible instead of
+  looking like the service has no config at all.
+
+### Changed
+
+- `docs/configuration.md` now includes `serv install`/`serv config`
+  command-line examples alongside the existing `config.yaml` examples,
+  including a flag-to-config-field mapping table.
+- `docs/configuration.md` adds two more Node.js examples: running a
+  TypeScript entry point via `ts-node`, and falling back to `npm.cmd` for
+  `npm run <script>` when the script can't be resolved to a direct `node`
+  invocation.
+
 ## [0.1.6]
 
 ### Added
