@@ -5,27 +5,27 @@ class Serv < Formula
   desc "Cross-platform Windows service / systemd / launchd process supervisor"
   homepage "https://github.com/TillmanBuildsTech/serv"
   license "MIT"
-  version "0.1.3"
+  version "0.1.6"
 
   on_macos do
     on_arm do
-      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.3/serv-darwin-arm64.tar.gz"
-      sha256 "f763e3718610633ceed3c7514f5dd1177df038b441f5b4c4dfdc6d7b6c48d593"
+      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-darwin-arm64.tar.gz"
+      sha256 "6d27557f5f2f1b45fb5d151656e9876e26189667f577a80feb9e103a0e066299"
     end
     on_intel do
-      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.3/serv-darwin-amd64.tar.gz"
-      sha256 "cb5070c2c91faab2392c8daac9684e452bd96db4a5bae9a0d348324dce75a308"
+      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-darwin-amd64.tar.gz"
+      sha256 "f1b11a04b178873ff335e0a499ca548067ac352e8084d13319c7604f230f2948"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.3/serv-linux-arm64.tar.gz"
-      sha256 "f7496c47ab1fcceb244af6ae3399b783d8d407b0e2560e0151ba02f4504263d8"
+      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-linux-arm64.tar.gz"
+      sha256 "855b693b4ba32299998abaa9e03c5013ed7ffbe2330ee4370384fff49758a1b8"
     end
     on_intel do
-      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.3/serv-linux-amd64.tar.gz"
-      sha256 "05d1014258e2cf93fa64e389dbd298dd48bbb5f4af25061010b3703d297dc933"
+      url "https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.6/serv-linux-amd64.tar.gz"
+      sha256 "adf8d6bd8640caa401bdb97b530f0615e2728249df7787a3e11c84dcb59aee9c"
     end
   end
 
