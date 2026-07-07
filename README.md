@@ -85,6 +85,8 @@ and [docs/hooks.md](docs/hooks.md) for the lifecycle hook system.
   type, default, and an example.
 - [Hooks](docs/hooks.md) — lifecycle events, environment variables, timeout
   behavior.
+- [Release process](docs/release-process.md) — branch flow, versioning, and
+  how pre-releases get built and published.
 - [CHANGELOG](CHANGELOG.md)
 
 ## Development

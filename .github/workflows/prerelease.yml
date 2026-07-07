@@ -1,0 +1,117 @@
+name: Prerelease
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+
+concurrency:
+  group: prerelease
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      rc_version: ${{ steps.rc.outputs.version }}
+      tag: ${{ steps.rc.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read base version
+        id: base
+        run: echo "version=$(tr -d '[:space:]' < internal/version/VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute next release-candidate number
+        id: rc
+        env:
+          BASE: ${{ steps.base.outputs.version }}
+        run: |
+          last=$(git tag -l "v${BASE}-rc.*" | sed -E "s/^v${BASE}-rc\.//" | sort -n | tail -1)
+          next=$(( ${last:-0} + 1 ))
+          echo "version=${BASE}-rc.${next}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${BASE}-rc.${next}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Stamp pre-release version
+        env:
+          VERSION: ${{ needs.version.outputs.rc_version }}
+        run: echo -n "$VERSION" > internal/version/VERSION
+
+      - name: Build and package
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          set -e
+          mkdir -p out
+          bin=serv
+          if [ "$GOOS" = "windows" ]; then bin=serv.exe; fi
+          go build -o "$bin" ./cmd/serv
+          if [ "$GOOS" = "windows" ]; then
+            zip "out/serv-${GOOS}-${GOARCH}.zip" "$bin"
+          else
+            tar -czf "out/serv-${GOOS}-${GOARCH}.tar.gz" "$bin"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: serv-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: out/*
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Tag pre-release
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: ${{ needs.version.outputs.tag }}
+          files: out/*
+          prerelease: true
+          generate_release_notes: true
