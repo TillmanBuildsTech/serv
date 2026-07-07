@@ -1,6 +1,8 @@
 # Serv
 
-Serv installs and supervises a long-running executable as a native Windows
+![serv](.github\assets\header.png)
+
+**Serv** installs and supervises a long-running executable as a native Windows
 service (via the SCM), or a systemd/launchd unit on Linux/macOS. It's a
 cross-platform, modern alternative to tools like NSSM, adding process lifecycle
 management, graceful shutdown, automatic restart with backoff, stdout/stderr
