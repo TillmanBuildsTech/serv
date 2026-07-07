@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.9]
+
+### Added
+
+- A `release` branch now sits between feature branches and `main`. Every
+  push to `release` builds and publishes a GitHub pre-release
+  (`v<VERSION>-rc.N`) for manual/automated testing, while public releases
+  (tagging, npm, Homebrew, Scoop, winget) still only happen on merges to
+  `main`. See [docs/release-process.md](docs/release-process.md).
+
 ## [0.1.8]
 
 ### Fixed
