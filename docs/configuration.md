@@ -202,36 +202,61 @@ recovery:
 ```yaml
 name: myapp
 display_name: My Application
-description: Runs the My Application background worker
-executable: C:\Program Files\MyApp\myapp.exe
-arguments: ["--config", "C:\\Program Files\\MyApp\\myapp.conf"]
-working_directory: C:\Program Files\MyApp
+description: An example service managed by serv
+
+executable: C:\Apps\myapp\myapp.exe
+arguments:
+  - --port
+  - "8080"
+working_directory: C:\Apps\myapp
+
 start_type: auto
 
 stop_method:
-  terminate_timeout: 3s
+  methods:
+    - console
+    - window
+    - threads
+    - terminate
+  console_timeout: 1500ms
+  window_timeout: 1500ms
+  threads_timeout: 1500ms
+  terminate_timeout: 1500ms
 
 restart:
   enabled: true
-  delay: 2s
-  throttle_cap: 1m
+  delay: 1s
+  throttle_cap: 5m
 
 exit_actions:
   0: exit
   1: restart
+  2: crash
 
-stdout: C:\ProgramData\myapp\logs\stdout.log
-stderr: C:\ProgramData\myapp\logs\stdout.log
+stdout: C:\Apps\myapp\logs\stdout.log
+stderr: C:\Apps\myapp\logs\stderr.log
 
 log_rotation:
   enabled: true
-  max_bytes: 5242880
-  max_age: 24h
+  max_bytes: 10485760  # 10 MB
+  max_age: 168h        # 7 days
+  online_rotation: true
+
+account:
+  type: local_system
 
 environment:
-  MYAPP_ENV: production
+  APP_ENV: production
+  LOG_LEVEL: info
+
+kill_process_tree: true
+priority: normal
 
 hooks:
-  pre-start: C:\Program Files\MyApp\hooks\pre-start.bat
-  post-exit: C:\Program Files\MyApp\hooks\post-exit.bat
+  pre_start: C:\Apps\myapp\hooks\pre_start.bat
+  post_stop: C:\Apps\myapp\hooks\post_stop.bat
+
+dependencies:
+  - postgresql
+  - redis
 ```
