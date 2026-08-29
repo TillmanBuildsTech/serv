@@ -2,26 +2,31 @@
 
 ## Branches
 
-- **Feature branches** — PR into `release`.
-- **`release`** — integration branch for the next version. Every push here
-  (i.e. every merged feature PR) triggers the [Prerelease](../.github/workflows/prerelease.yml)
-  workflow, which builds all platform binaries and publishes them as a
-  GitHub **pre-release** tagged `v<VERSION>-rc.N`, where `<VERSION>` is
-  whatever is currently in [`internal/version/VERSION`](../internal/version/VERSION)
-  and `N` auto-increments per push. Use these builds for manual and automated
-  functional testing, and to land last-minute fixes before cutting a public
-  release.
+- **Task branches** — created by kanban workers in isolated git worktrees, based off
+  `dev`. Each task pushes its branch into `dev` on completion.
+- **`dev`** — the integration branch where all in-flight work accumulates. CI runs on
+  every push here (tests only — no release, no artifacts, no deploy). Safe for automated
+  pushes. When a set of changes is ready to test together, cut/merge `dev` into `release`.
+- **`release`** — RC cut for the next version. Every push here (i.e. every merged feature
+  PR) triggers the [Prerelease](../.github/workflows/prerelease.yml) workflow, which builds
+  all platform binaries and publishes them as a GitHub **pre-release** tagged
+  `v<VERSION>-rc.N`, where `<VERSION>` is whatever is currently in
+  [`internal/version/VERSION`](../internal/version/VERSION) and `N` auto-increments per
+  push. Can also be triggered on demand via `workflow_dispatch`. Use these builds for
+  manual and automated functional testing, and to land last-minute fixes before cutting a
+  public release.
 - **`main`** — public releases only. Merging `release` into `main` (via PR)
   triggers the existing [Release](../.github/workflows/release.yml) workflow:
   it tags `v<VERSION>`, builds binaries, publishes the GitHub release, bumps
   the Homebrew/Scoop/winget manifests, and publishes to npm.
 
 ```
-feature/*  --PR-->  release  --PR-->  main
-                       |                |
-                 prerelease.yml    release.yml
-              (rc builds, GitHub    (tag, GitHub release,
-               pre-release only)     npm, Homebrew, Scoop, winget)
+task/* (worktree)  --push-->  dev  (CI: tests only)
+        dev  --cut/merge-->  release  --PR-->  main
+                    |                        |
+              prerelease.yml            release.yml
+           (rc builds, GitHub        (tag, GitHub release,
+            pre-release only)         npm, Homebrew, Scoop, winget)
 ```
 
 ## Versioning
