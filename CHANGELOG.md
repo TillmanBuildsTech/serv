@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0]
+
+### Added
+
+- Add dev integration branch, CI version-guard, and enforced VERSION/CHANGELOG bumping
+
 All notable changes to this project are documented in this file.
 
 ## [0.1.9]
