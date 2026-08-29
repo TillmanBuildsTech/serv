@@ -5,6 +5,20 @@ Windows). Pick whichever method fits your platform.
 
 ## Windows
 
+### Chocolatey
+
+Once published to the community repository, install with:
+
+```powershell
+choco install serv
+```
+
+The package lives at
+[`packaging/chocolatey/`](../packaging/chocolatey/) — it downloads the
+official `serv.exe` for your architecture from the GitHub release and
+verifies its SHA256 checksum before installing a portable shim on your
+PATH. Publish steps are in [docs/publishing-chocolatey.md](publishing-chocolatey.md).
+
 ### Scoop
 
 Once a bucket is published, install with:

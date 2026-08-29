@@ -59,10 +59,18 @@ func newStatusCmd() *cobra.Command {
 			for _, d := range status.Detail {
 				fmt.Fprintf(out, "%s %s\n", padLabel(d.Label), d.Value)
 			}
+			if !quiet {
+				fmt.Fprintf(out, "\n%s\n", starCTA)
+			}
 			return nil
 		},
 	}
 }
+
+// starCTA is a low-friction ask shown once per `serv status` invocation
+// (suppressed by --quiet) so people who find the tool useful have a reason
+// to star the project.
+const starCTA = "serv is free and open source — star it if it saves you time: https://github.com/TillmanBuildsTech/serv"
 
 // detailLabelWidth is wide enough to fit the longest detail label ("TriggeredBy:")
 // so platform-native detail fields line up in a column, like the fixed-width

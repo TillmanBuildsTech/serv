@@ -3,12 +3,37 @@
 [![Release](https://github.com/TillmanBuildsTech/serv/actions/workflows/release.yml/badge.svg)](https://github.com/TillmanBuildsTech/serv/actions/workflows/release.yml)
 ![serv](https://github.com/TillmanBuildsTech/serv/blob/main/.github/assets/header.png)
 
-**Serv** installs and supervises a long-running executable as a native Windows
-service (via the SCM), or a systemd/launchd unit on Linux/macOS. It's a
-cross-platform, modern alternative to tools like NSSM, adding process lifecycle
-management, graceful shutdown, automatic restart with backoff, stdout/stderr
-capture with rotation, and lifecycle hooks — all driven by one YAML config
-that works the same way on every platform.
+**NSSM stopped development in 2017. serv is its modern successor — cross-platform, CLI-first, one YAML config, no GUI.**
+
+Install any long-running executable as a native Windows service (via the SCM), or a systemd/launchd unit on Linux/macOS — all from one YAML config that behaves identically on every platform. serv is actively maintained and adds modern supervision NSSM never had: graceful shutdown escalation, automatic restart with backoff, stdout/stderr capture with rotation, lifecycle hooks, and process-tree killing.
+
+> ⭐ **serv saves you time? Give it a star.** Maintenance, bug fixes, and new features land on a regular cadence — stars tell us the effort is worth it.
+>
+> 🔄 **Actively maintained.** Unlike NSSM (dormant since 2017), serv ships regular releases. See the [CHANGELOG](CHANGELOG.md).
+
+<!--
+TODO(demo-gif): Embed the quick-start demo GIF here once it's recorded.
+Expected: .github/assets/demo.gif — `serv install --exe ... --name myapp`,
+`serv start myapp`, `serv status myapp` succeeding on a real system.
+Blocked on human action (kanban task t_5f884a45); replace this comment with
+![demo](https://github.com/TillmanBuildsTech/serv/blob/main/.github/assets/demo.gif)
+when the file exists.
+-->
+
+## Serv vs NSSM vs WinSW vs Servy
+
+| | **serv** | NSSM | WinSW | Servy |
+|---|---|---|---|---|
+| **Cross-platform** | ✅ **Windows, Linux, macOS** | ❌ Windows only | ❌ Windows only | ❌ Windows only |
+| Config | One YAML file, portable | GUI / registry / INI | XML | GUI / CLI / PowerShell |
+| CLI-first | ✅ yes | Partial (GUI-centric) | Partial | CLI + GUI |
+| Auto-restart | ✅ with exponential backoff | ✅ basic | ✅ basic | ✅ auto-recovery |
+| Graceful shutdown | ✅ escalating (Ctrl+C → close → terminate / SIGTERM → SIGKILL) | Basic | Basic | Basic |
+| Log rotation | ✅ size- and age-based, timestamped | ✅ | ✅ | ✅ |
+| Lifecycle hooks | ✅ pre-start / post-start / pre-stop / post-exit | Some | Some | Some |
+| Maintained | ✅ **actively** | ❌ dormant since 2017 | ✅ | ✅ |
+
+Serv is the only one that runs the same config on Windows, Linux, and macOS — check your service definition into version control and use it everywhere.
 
 ## Features
 
@@ -36,7 +61,17 @@ that works the same way on every platform.
 
 ## Quick start
 
-Install [Serv](docs/installation.md), then install and start a service:
+### Install
+
+| Platform | Command |
+|---|---|
+| Windows | `winget install TillmanBuildsTech.Serv` · `choco install serv` |
+| macOS | `brew install serv` |
+| Any (Node.js) | `npm install -g @tillmanbuildstech/serv` |
+
+### Run
+
+Install, start, and check your service in three commands:
 
 ```sh
 serv install --exe /path/to/myapp --name myapp
@@ -74,17 +109,23 @@ system directory (e.g. `C:\ProgramData\serv\myapp\config.yaml` on Windows,
 [where config lives](docs/configuration.md#where-config-lives) for the full
 list and how to update it afterward.
 
-See the [configuration reference](docs/configuration.md) for every field,
-and [docs/hooks.md](docs/hooks.md) for the lifecycle hook system.
+See the [Serv configuration reference](docs/configuration.md) for every field,
+and [Serv lifecycle hooks](docs/hooks.md) for the lifecycle hook system.
 
 ## Documentation
 
-- [Installation](docs/installation.md) — binary download, package managers,
-  building from source.
-- [Configuration reference](docs/configuration.md) — every YAML field, its
-  type, default, and an example.
-- [Hooks](docs/hooks.md) — lifecycle events, environment variables, timeout
-  behavior.
+Serv is a modern, cross-platform successor to NSSM — the docs below cover
+installing, configuring, and hooking into any app as a native Windows,
+Linux, or macOS service.
+
+- [Install serv](docs/installation.md) — run any app as a Windows, Linux, or
+  macOS service; binary download, package managers, building from source.
+- [Serv configuration reference](docs/configuration.md) — every YAML field,
+  its type, default, and an example.
+- [Serv lifecycle hooks](docs/hooks.md) — lifecycle events, environment
+  variables, timeout behavior.
+- [Release process](docs/release-process.md) — branch flow, versioning, and
+  how pre-releases get built and published.
 - [CHANGELOG](CHANGELOG.md)
 
 ## Development

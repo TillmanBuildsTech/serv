@@ -1,0 +1,24 @@
+VERIFICATION
+
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+This package is a portable installer: it downloads the official serv.exe
+binary from the TillmanBuildsTech/serv GitHub release for the host
+architecture and verifies its SHA256 checksum before placing it on PATH.
+
+Download URLs (v0.1.9):
+  amd64  https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.9/serv-windows-amd64.zip
+  arm64  https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.9/serv-windows-arm64.zip
+
+SHA256 checksums (pinned in chocolateyInstall.ps1 and verified at install):
+  serv-windows-amd64.zip  ee35250e3bed366fc15aa2bb48edcb17247e9948c14bbf8b924ef25358081a06
+  serv-windows-arm64.zip  246518234627415aed32e0623d10b0b74ec5ae6e570351e98a136b528566166c
+
+These checksums are published in the repository at:
+  https://github.com/TillmanBuildsTech/serv/blob/main/packaging/npm/serv/checksums.json
+  https://github.com/TillmanBuildsTech/serv/blob/main/packaging/winget/TillmanBuildsTech.Serv.installer.yaml
+
+The archive contains a single static binary, serv.exe. Source and build
+instructions (reproducible via `go build`) live at:
+  https://github.com/TillmanBuildsTech/serv

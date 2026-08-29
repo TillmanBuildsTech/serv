@@ -1,6 +1,34 @@
 # Changelog
 
+## [0.2.0]
+
+### Added
+
+- **README rewritten as a promotion landing page** — opens with the NSSM-successor
+  positioning statement, adds a `serv` vs `NSSM` vs `WinSW` vs `Servy` comparison table,
+  an actively-maintained note, and a "star if it saves you time" call to action.
+- **`serv status` star CTA** — a one-line, low-friction "star if it saves you time"
+  prompt in `status` output, gated behind a new `--quiet`/`-q` flag so it stays optional.
+- **Chocolatey packaging + publish** — new `packaging/chocolatey/` (SHA256-verified
+  download of the official `serv.exe`), wired into the release workflow to publish to the
+  Chocolatey community feed on release.
+- **`dev` integration branch** — all work accumulates on `dev` (tests-only CI, no
+  release); cut `dev` → `release` for RC builds and `release` → `main` for public release.
+- **Enforced VERSION/CHANGELOG versioning** — `scripts/bump_version.py` bumps both
+  together; a CI `version-guard` job fails the build if the version is already released.
+- **CI now runs on `dev`** in addition to `main` and `release`.
+
 All notable changes to this project are documented in this file.
+
+## [0.1.9]
+
+### Added
+
+- A `release` branch now sits between feature branches and `main`. Every
+  push to `release` builds and publishes a GitHub pre-release
+  (`v<VERSION>-rc.N`) for manual/automated testing, while public releases
+  (tagging, npm, Homebrew, Scoop, winget) still only happen on merges to
+  `main`. See [docs/release-process.md](docs/release-process.md).
 
 ## [0.1.8]
 

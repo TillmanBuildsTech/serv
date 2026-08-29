@@ -27,6 +27,7 @@ jobs:
         id: check
         run: |
           if git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.version.outputs.version }}$"; then
+            echo "::warning::v${{ steps.version.outputs.version }} already released. Bump internal/version/VERSION and CHANGELOG.md before the next main merge."
             echo "should_release=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_release=true" >> "$GITHUB_OUTPUT"
@@ -150,3 +151,28 @@ jobs:
       - name: Create npmjs.org release
         run: npm publish --access public
         working-directory: packaging/npm/serv
+
+  chocolatey:
+    needs: [check, release]
+    if: needs.check.outputs.should_release == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Chocolatey is preinstalled on GitHub-hosted windows-latest runners.
+      - name: Pack Chocolatey package
+        shell: pwsh
+        working-directory: packaging/chocolatey
+        run: choco pack
+
+      - name: Push to Chocolatey community feed
+        shell: pwsh
+        working-directory: packaging/chocolatey
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+        run: |
+          $pkg = Get-ChildItem -Filter *.nupkg | Select-Object -First 1
+          if (-not $pkg) { throw "choco pack produced no .nupkg" }
+          choco push $pkg.FullName --source https://push.chocolatey.org/ --api-key "$env:CHOCO_API_KEY"
