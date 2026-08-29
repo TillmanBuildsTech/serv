@@ -11,6 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  version-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if VERSION already has a release tag
+        run: |
+          version=$(tr -d '[:space:]' < internal/version/VERSION)
+          echo "current VERSION: $version"
+          if git ls-remote --tags origin | grep -q "refs/tags/v${version}$"; then
+            echo "::error::Version v${version} already exists on origin. Bump internal/version/VERSION (and CHANGELOG.md) before merging to main."
+            exit 1
+          fi
+          echo "v${version} is a new version - OK"
+
   test:
     strategy:
       matrix:
