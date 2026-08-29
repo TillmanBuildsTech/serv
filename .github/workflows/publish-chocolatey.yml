@@ -1,0 +1,82 @@
+name: Publish Chocolatey
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.2.0). Must match a released GitHub tag with the windows binaries.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  chocolatey:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pin packaging to v${{ inputs.version }} and fetch checksums
+        shell: pwsh
+        run: |
+          $v = "${{ inputs.version }}"
+
+          # 1. nuspec: version + license fix (choco requires <licenseUrl>, not <license type=expression>)
+          $nuspec = 'packaging/chocolatey/serv.nuspec'
+          $n = Get-Content $nuspec -Raw
+          $n = $n -replace '<version>[0-9.]+</version>', "<version>$v</version>"
+          $n = $n -replace '<license type="expression">MIT</license>', '<licenseUrl>https://github.com/TillmanBuildsTech/serv/blob/main/LICENSE</licenseUrl>'
+          Set-Content $nuspec $n -NoNewline
+
+          # 2. install script: point download URLs at v$v
+          $install = 'packaging/chocolatey/tools/chocolateyInstall.ps1'
+          $i = Get-Content $install -Raw
+          $i = $i -replace '/v[0-9.]+/', "/v$v/"
+          Set-Content $install $i -NoNewline
+
+          # 3. download the real windows release assets and pin their SHA256 checksums
+          $amd = Join-Path $env:TEMP 'serv-windows-amd64.zip'
+          $arm = Join-Path $env:TEMP 'serv-windows-arm64.zip'
+          Invoke-WebRequest -Uri "https://github.com/TillmanBuildsTech/serv/releases/download/v$v/serv-windows-amd64.zip" -OutFile $amd
+          Invoke-WebRequest -Uri "https://github.com/TillmanBuildsTech/serv/releases/download/v$v/serv-windows-arm64.zip" -OutFile $arm
+          $amdHash = (Get-FileHash $amd -Algorithm SHA256).Hash.ToLower()
+          $armHash = (Get-FileHash $arm -Algorithm SHA256).Hash.ToLower()
+          Write-Host "amd64=$amdHash"
+          Write-Host "arm64=$armHash"
+
+          # 4. write the checksums into the install script
+          $i = Get-Content $install -Raw
+          $i = $i -replace "[0-9a-f]{64}", '__PLACEHOLDER__' # defensive; then set explicitly
+          Set-Content $install $i -NoNewline
+          $i = Get-Content $install -Raw
+          $lines = $i -split "`r?`n"
+          for ($k = 0; $k -lt $lines.Count; $k++) {
+            if ($lines[$k] -match "AMD64|arm64|ARM64") { }
+            if ($lines[$k] -match "serv-windows-amd64") { $lines[$k+1] = "    `$checksum = '$amdHash'" }
+            if ($lines[$k] -match "serv-windows-arm64") { $lines[$k+1] = "    `$checksum = '$armHash'" }
+          }
+          Set-Content $install ($lines -join "`n") -NoNewline
+          Write-Host "--- install script checksums ---"
+          Get-Content $install | Select-String -Pattern "checksum ="
+
+      - name: Pack Chocolatey package
+        shell: pwsh
+        working-directory: packaging/chocolatey
+        run: |
+          choco pack
+          $pkg = Get-ChildItem -Filter *.nupkg | Select-Object -First 1
+          if (-not $pkg) { throw "choco pack produced no .nupkg" }
+          Write-Host "PACKED: $($pkg.FullName)"
+
+      - name: Push to Chocolatey community feed
+        shell: pwsh
+        working-directory: packaging/chocolatey
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+        run: |
+          $pkg = Get-ChildItem -Filter *.nupkg | Select-Object -First 1
+          if (-not $pkg) { throw "choco pack produced no .nupkg" }
+          choco push $pkg.FullName --source https://push.chocolatey.org/ --api-key "$env:CHOCO_API_KEY"
