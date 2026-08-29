@@ -7,7 +7,7 @@ Run after release artifacts exist locally, e.g.:
 
 `out/` must contain the six release archives named as the Release workflow
 produces them (serv-<goos>-<goarch>.{tar.gz,zip}). Bumps Homebrew, Scoop,
-winget, and the npm wrapper package.
+winget, the npm wrapper package, and the Chocolatey package.
 """
 
 import hashlib
@@ -124,6 +124,27 @@ def update_scoop(version, hashes):
         f.write("\n")
 
 
+def update_chocolatey(version, hashes):
+    # nuspec: <version>X.Y.Z</version> and the /vX.Y.Z/ download URLs.
+    nuspec = "packaging/chocolatey/serv.nuspec"
+    with open(nuspec, encoding="utf-8") as f:
+        content = f.read()
+    content = re.sub(r"(<version>)\d+\.\d+\.\d+(</version>)", rf"\g<1>{version}\g<2>", content)
+    content = re.sub(r"(/v)\d+\.\d+\.\d+(/)", rf"\g<1>{version}\g<2>", content)
+    with open(nuspec, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    # chocolateyInstall.ps1: URL versions + the two pinned SHA256 checksums,
+    # each on the line immediately following the asset's URL line.
+    install = "packaging/chocolatey/tools/chocolateyInstall.ps1"
+    update_url_and_next_line_field(
+        install,
+        version,
+        hashes,
+        re.compile(r"(\$checksum = ')[0-9a-f]{64}(')"),
+    )
+
+
 def update_npm(version, hashes):
     pkg_path = "packaging/npm/serv/package.json"
     with open(pkg_path, encoding="utf-8") as f:
@@ -155,6 +176,7 @@ def main():
     update_scoop(version, hashes)
     update_winget(version, hashes)
     update_npm(version, hashes)
+    update_chocolatey(version, hashes)
 
 
 if __name__ == "__main__":

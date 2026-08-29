@@ -18,7 +18,7 @@
 - **`main`** — public releases only. Merging `release` into `main` (via PR)
   triggers the existing [Release](../.github/workflows/release.yml) workflow:
   it tags `v<VERSION>`, builds binaries, publishes the GitHub release, bumps
-  the Homebrew/Scoop/winget manifests, and publishes to npm.
+  the Homebrew/Scoop/winget manifests, and publishes to npm and Chocolatey.
 
 ```
 task/* (worktree)  --push-->  dev  (CI: tests only)
@@ -26,7 +26,7 @@ task/* (worktree)  --push-->  dev  (CI: tests only)
                     |                        |
               prerelease.yml            release.yml
            (rc builds, GitHub        (tag, GitHub release,
-            pre-release only)         npm, Homebrew, Scoop, winget)
+            pre-release only)         npm, Homebrew, Scoop, winget, Chocolatey)
 ```
 
 ## Versioning
@@ -35,10 +35,36 @@ task/* (worktree)  --push-->  dev  (CI: tests only)
 `0.2.0`) — never an `-rc.N` suffix. The prerelease workflow stamps the rc
 suffix into a checked-out copy of `VERSION` only for the duration of the
 build (so the embedded `version.Version` in rc binaries reads e.g.
-`0.2.0-rc.3`); that change is never committed. This means:
+`0.2.0-rc.3`); that change is never committed.
 
-- Bump `VERSION` to the next target release once, when starting work on it
-  (on the `release` branch), per the existing [CLAUDE.md](../.claude/CLAUDE.md) convention.
+### How versions and the CHANGELOG are bumped (enforced)
+
+- **`CHANGELOG.md` is the curated, authoritative per-version log** (Option A).
+  GitHub release notes are auto-generated as a convenience, but the CHANGELOG
+  is the maintained record and is kept in sync with `VERSION`.
+- **`VERSION` and `CHANGELOG.md` are always bumped together** — never one
+  without the other — as a single step at the **`dev` → `release` cut**, before
+  an RC is built. Use the helper:
+
+  ```sh
+  python3 scripts/bump_version.py 0.2.0 -m "One-line summary of the release"
+  ```
+
+  This writes the new version to `internal/version/VERSION` and inserts a
+  `## [0.2.0]` entry under `# Changelog`. Commit both in the same commit.
+
+- **CI guard (enforced):** the `version-guard` job in `ci.yml` fails the build
+  if the `VERSION` in `internal/version/VERSION` already has a `vX.Y.Z` tag on
+  `origin`. So a merge to `main` cannot ship a version that was already
+  released — the bump must happen first.
+- **Release workflow (belt-and-suspenders):** the `check` job in `release.yml`
+  warns (and sets `should_release=false`) if the version is already tagged, so
+  a stale `main` merge never double-ships.
+
+This means:
+
+- Bump `VERSION` + `CHANGELOG.md` once per release cycle, at the `dev` →
+  `release` cut, via `scripts/bump_version.py`.
 - Every subsequent push to `release` produces the next `-rc.N` for that same
   target version, with no further file edits needed.
 - Merging `release` into `main` releases exactly that version, unsuffixed.
