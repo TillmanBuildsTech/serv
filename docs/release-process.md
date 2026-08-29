@@ -18,7 +18,7 @@
 - **`main`** — public releases only. Merging `release` into `main` (via PR)
   triggers the existing [Release](../.github/workflows/release.yml) workflow:
   it tags `v<VERSION>`, builds binaries, publishes the GitHub release, bumps
-  the Homebrew/Scoop/winget manifests, and publishes to npm.
+  the Homebrew/Scoop/winget manifests, and publishes to npm and Chocolatey.
 
 ```
 task/* (worktree)  --push-->  dev  (CI: tests only)
@@ -26,7 +26,7 @@ task/* (worktree)  --push-->  dev  (CI: tests only)
                     |                        |
               prerelease.yml            release.yml
            (rc builds, GitHub        (tag, GitHub release,
-            pre-release only)         npm, Homebrew, Scoop, winget)
+            pre-release only)         npm, Homebrew, Scoop, winget, Chocolatey)
 ```
 
 ## Versioning

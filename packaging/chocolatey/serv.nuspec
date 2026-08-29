@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Read this before publishing: https://docs.chocolatey.org/en-us/community-repository/moderation/package-verifier -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>serv</id>
+    <version>0.1.9</version>
+    <title>serv</title>
+    <authors>TillmanBuildsTech</authors>
+    <owners>TillmanBuildsTech</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/TillmanBuildsTech/serv</projectUrl>
+    <projectSourceUrl>https://github.com/TillmanBuildsTech/serv</projectSourceUrl>
+    <docsUrl>https://github.com/TillmanBuildsTech/serv/blob/main/docs/installation.md</docsUrl>
+    <bugTrackerUrl>https://github.com/TillmanBuildsTech/serv/issues</bugTrackerUrl>
+    <tags>serv service supervisor nssm windows systemd launchd process-manager yaml cli</tags>
+    <summary>Install and supervise long-running executables as native OS services (Windows SCM / systemd / launchd).</summary>
+    <description>serv installs and supervises a long-running executable as a native Windows service (via the Service Control Manager), or a systemd/launchd unit on Linux/macOS. It is a cross-platform, modern alternative to tools like NSSM, adding process lifecycle management, graceful shutdown, automatic restart with backoff, stdout/stderr capture with rotation, and lifecycle hooks - all driven by one YAML config that works the same way on every platform.
+
+This package downloads the official serv.exe binary for your architecture from the TillmanBuildsTech/serv GitHub release and verifies its SHA256 checksum before installing. It is a portable install: serv.exe is placed on your PATH (via a Chocolatey shim) and does not require Administrator privileges to run.</description>
+    <releaseNotes>https://github.com/TillmanBuildsTech/serv/blob/main/CHANGELOG.md</releaseNotes>
+    <copyright>Copyright (c) Tillman Builds Tech</copyright>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
