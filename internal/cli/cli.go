@@ -13,8 +13,14 @@ import (
 // hitting a real SCM/systemd/launchd.
 var managerFactory = platform.NewServiceManager
 
+// quiet suppresses non-essential output (such as the promotional CTA in
+// `serv status`). Set via the global --quiet flag.
+var quiet bool
+
 // Register adds all service management subcommands to root.
 func Register(root *cobra.Command) {
+	root.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false,
+		"suppress non-essential output (e.g. the star-this-project message)")
 	root.AddCommand(
 		newInstallCmd(),
 		newRemoveCmd(),

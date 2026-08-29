@@ -399,3 +399,49 @@ func TestConfigUpdatesExisting(t *testing.T) {
 		t.Errorf("Executable = %q, want unchanged %q", updated.Executable, os.Args[0])
 	}
 }
+
+// statusWithMock runs `serv status myapp` against a mock manager and returns
+// the output, so CTA tests can share the setup.
+func statusWithMock(t *testing.T, state string, pid int) string {
+	t.Helper()
+	withMockManager(t, &platform.MockManager{
+		StatusFunc: func(name string) (platform.ServiceStatus, error) {
+			return platform.ServiceStatus{State: state, PID: pid}, nil
+		},
+	})
+	origStartTime := processStartTime
+	processStartTime = func(pid int) (time.Time, bool) { return time.Time{}, false }
+	t.Cleanup(func() { processStartTime = origStartTime })
+	out, err := runCmd(t, "status", "myapp")
+	if err != nil {
+		t.Fatalf("status: unexpected error: %v", err)
+	}
+	return out
+}
+
+func TestStatusShowsStarCTA(t *testing.T) {
+	out := statusWithMock(t, "running", 4242)
+	if !strings.Contains(out, "star it if it saves you time") ||
+		!strings.Contains(out, "https://github.com/TillmanBuildsTech/serv") {
+		t.Errorf("status output should include the star CTA; got:\n%s", out)
+	}
+}
+
+func TestStatusQuietSuppressesStarCTA(t *testing.T) {
+	withMockManager(t, &platform.MockManager{
+		StatusFunc: func(name string) (platform.ServiceStatus, error) {
+			return platform.ServiceStatus{State: "running", PID: 4242}, nil
+		},
+	})
+	origStartTime := processStartTime
+	processStartTime = func(pid int) (time.Time, bool) { return time.Time{}, false }
+	t.Cleanup(func() { processStartTime = origStartTime })
+	out, err := runCmd(t, "status", "myapp", "--quiet")
+	if err != nil {
+		t.Fatalf("status: unexpected error: %v", err)
+	}
+	if strings.Contains(out, "star it if it saves you time") {
+		t.Errorf("status output with --quiet should not include the star CTA; got:\n%s", out)
+	}
+}
+
