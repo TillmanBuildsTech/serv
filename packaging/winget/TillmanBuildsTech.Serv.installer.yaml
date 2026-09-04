@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
-PackageIdentifier: TillmanBuildsTech.Serv
+PackageIdentifier: TillmanBuildsTech.serv
 PackageVersion: 0.1.9
 InstallerType: zip
 NestedInstallerType: portable
