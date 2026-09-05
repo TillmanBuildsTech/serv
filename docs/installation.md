@@ -44,7 +44,7 @@ Once submitted to the winget community repository (or hosted privately),
 install with:
 
 ```powershell
-winget install TillmanBuildsTech.Serv
+winget install TillmanBuildsTech.serv
 ```
 
 ### Binary download / build from source
