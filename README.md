@@ -126,6 +126,8 @@ Linux, or macOS service.
   variables, timeout behavior.
 - [Release process](docs/release-process.md) — branch flow, versioning, and
   how pre-releases get built and published.
+- [Contributing](CONTRIBUTING.md) — how to build, test, and ship: branch
+  model, CI/CD workflow triggers, versioning, and release mechanics.
 - [CHANGELOG](CHANGELOG.md)
 
 ## Development
