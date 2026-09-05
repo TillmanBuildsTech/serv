@@ -3,12 +3,12 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>serv</id>
-    <version>0.1.9</version>
+    <version>0.2.0</version>
     <title>serv</title>
     <authors>TillmanBuildsTech</authors>
     <owners>TillmanBuildsTech</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <license type="expression">MIT</license>
+    <licenseUrl>https://github.com/TillmanBuildsTech/serv/blob/main/LICENSE</licenseUrl>
     <projectUrl>https://github.com/TillmanBuildsTech/serv</projectUrl>
     <projectSourceUrl>https://github.com/TillmanBuildsTech/serv</projectSourceUrl>
     <docsUrl>https://github.com/TillmanBuildsTech/serv/blob/main/docs/installation.md</docsUrl>

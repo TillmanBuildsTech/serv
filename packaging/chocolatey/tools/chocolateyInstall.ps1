@@ -7,13 +7,13 @@ $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 $arch = $env:PROCESSOR_ARCHITECTURE
 switch ($arch) {
   'ARM64' {
-    $url      = 'https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.9/serv-windows-arm64.zip'
-    $checksum = '246518234627415aed32e0623d10b0b74ec5ae6e570351e98a136b528566166c'
+    $url      = 'https://github.com/TillmanBuildsTech/serv/releases/download/v0.2.0/serv-windows-arm64.zip'
+    $checksum = '6706eb7f00b70886844440778da212090883eb60ae149fa28446fe9d2df61848'
   }
   default {
     # AMD64 (and any 32-bit x86 host, which will run the amd64 binary)
-    $url      = 'https://github.com/TillmanBuildsTech/serv/releases/download/v0.1.9/serv-windows-amd64.zip'
-    $checksum = 'ee35250e3bed366fc15aa2bb48edcb17247e9948c14bbf8b924ef25358081a06'
+    $url      = 'https://github.com/TillmanBuildsTech/serv/releases/download/v0.2.0/serv-windows-amd64.zip'
+    $checksum = '23509306da91521c6d266baa4d67f78e88cf539e07bc086ac4bc50dbfd1fa849'
   }
 }
 
