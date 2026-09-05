@@ -81,8 +81,8 @@ The repository uses three long-lived branches plus short-lived feature branches.
 
 ```
 task/* (feature worktree)  --push-->  dev   (CI: build + tests only)
-        dev  --cut/merge-->  release       (Prerelease workflow: rc builds)
-        release  --PR-->  main            (Release workflow: tag + publish)
+        dev  --PR-->  release                (Prerelease workflow: rc builds)
+        release  --PR-->  main             (Release workflow: tag + publish)
 ```
 
 | Branch | Purpose | What CI does on it |
@@ -100,6 +100,13 @@ task/* (feature worktree)  --push-->  dev   (CI: build + tests only)
 
 There is **no release-branch-based flow** per feature — the single `release` branch is the
 staging area for whatever is about to ship.
+
+### Staging a release
+
+When a set of changes on `dev` is ready to test as a release candidate, open a **pull
+request from `dev` into `release`** — never push or merge into `release` directly.
+Merging that PR pushes `release`, which triggers the `Prerelease` workflow to build an
+RC.
 
 ---
 
@@ -119,8 +126,8 @@ This writes the new version to `VERSION` and inserts a `## [0.3.0]` entry under
 `# Changelog`. Commit both together. The helper refuses to run if the version is not
 greater than the current one, or if that version already has a tag on `origin`.
 
-The bump happens **once per release cycle, at the `dev` → `release` cut** — before the
-first RC is built.
+The bump happens **once per release cycle, committed on `dev` before opening the
+`dev` → `release` PR** — so the first RC is never built from an unbumped version.
 
 ### Why CI goes red on `main` sometimes
 
@@ -187,11 +194,13 @@ The release workflow is the only path that ships to public package registries.
 ## How a release happens end to end
 
 1. **Develop on `dev`** — merge feature PRs; CI runs build + tests.
-2. **Cut the version** — when ready, bump `VERSION` + `CHANGELOG.md`
-   (`scripts/bump_version.py 0.3.0 -m "..."`) and merge `dev` into `release`.
-3. **Test the RC** — each `release` push builds a `v0.3.0-rc.N` GitHub pre-release. Verify
-   the binaries behave.
-4. **Ship** — open the PR from `release` to `main`. On merge, `release.yml` tags
+2. **Cut the version** — when ready, bump `VERSION` + `CHANGELOG.md` on `dev`
+   (`scripts/bump_version.py 0.3.0 -m "..."`) and commit.
+3. **Open the `dev` → `release` PR** and merge it. Merging pushes `release`,
+   which builds a `v0.3.0-rc.N` GitHub pre-release.
+4. **Test the RC** — verify the pre-release binaries behave; push any last-minute
+   fixes to `dev` and re-cut via a fresh `dev` → `release` PR if needed.
+5. **Ship** — open the PR from `release` to `main`. On merge, `release.yml` tags
    `v0.3.0`, uploads the release, and publishes to npm/Homebrew/Scoop/winget/Chocolatey.
 
 ---
