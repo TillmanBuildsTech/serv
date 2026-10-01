@@ -1,16 +1,16 @@
 {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "A cross-platform Windows service / systemd / launchd process supervisor.",
     "homepage": "https://github.com/TillmanBuildsTech/serv",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/TillmanBuildsTech/serv/releases/download/v0.2.0/serv-windows-amd64.zip",
-            "hash": "23509306da91521c6d266baa4d67f78e88cf539e07bc086ac4bc50dbfd1fa849"
+            "url": "https://github.com/TillmanBuildsTech/serv/releases/download/v0.3.0/serv-windows-amd64.zip",
+            "hash": "9fcfaa58a76b7b5b2e4996d7dc48b5411795d7de53e86dfd7188bb3757837059"
         },
         "arm64": {
-            "url": "https://github.com/TillmanBuildsTech/serv/releases/download/v0.2.0/serv-windows-arm64.zip",
-            "hash": "6706eb7f00b70886844440778da212090883eb60ae149fa28446fe9d2df61848"
+            "url": "https://github.com/TillmanBuildsTech/serv/releases/download/v0.3.0/serv-windows-arm64.zip",
+            "hash": "3e107c9fdd738afbf1c3928ad1eb170fa6d22dc1aa60ac3e23354ddbbd6f252d"
         }
     },
     "bin": "serv.exe",

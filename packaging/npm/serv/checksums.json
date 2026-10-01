@@ -1,9 +1,9 @@
 {
-    "version": "0.2.0",
-    "serv-darwin-amd64.tar.gz": "49c03cf886241fd3ea0ea5ab35ae10c85e19601f7ae8ead4c3959ab0504ea9f6",
-    "serv-darwin-arm64.tar.gz": "bbbf168963a3b96f6ec5934f67479961410698fbd8aaa8857659a3e497a831c7",
-    "serv-linux-amd64.tar.gz": "b963899587c6d68cd2309717cbab3c9904790cc132390b1b51b8b07bd6cf5a2d",
-    "serv-linux-arm64.tar.gz": "490e30a15eae450258d60dbf7181a4987297db33ace95bc2aef8eb06c9acce46",
-    "serv-windows-amd64.zip": "23509306da91521c6d266baa4d67f78e88cf539e07bc086ac4bc50dbfd1fa849",
-    "serv-windows-arm64.zip": "6706eb7f00b70886844440778da212090883eb60ae149fa28446fe9d2df61848"
+    "version": "0.3.0",
+    "serv-darwin-amd64.tar.gz": "9c30ec8b26d45b4e7913ca5e99f9a6d08696d0bde90ec98b2a259821d11ec262",
+    "serv-darwin-arm64.tar.gz": "e571e86dab84a2298028a1a3f53a4cf2d7d02a1105ec60367d1287669599206b",
+    "serv-linux-amd64.tar.gz": "c2b14c6199b9a7f9376c88b92d4447fc15b01cc80a9dfb25d01c596a394bba84",
+    "serv-linux-arm64.tar.gz": "efaf02dca8e0929e9921a3027d76de1a5029e85f83211fd6acc9b3d52dc6108c",
+    "serv-windows-amd64.zip": "9fcfaa58a76b7b5b2e4996d7dc48b5411795d7de53e86dfd7188bb3757837059",
+    "serv-windows-arm64.zip": "3e107c9fdd738afbf1c3928ad1eb170fa6d22dc1aa60ac3e23354ddbbd6f252d"
 }
