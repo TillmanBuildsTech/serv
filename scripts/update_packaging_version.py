@@ -94,9 +94,9 @@ def update_homebrew(version, hashes):
 
 def update_winget(version, hashes):
     for path in [
-        "packaging/winget/TillmanBuildsTech.Serv.installer.yaml",
-        "packaging/winget/TillmanBuildsTech.Serv.locale.en-US.yaml",
-        "packaging/winget/TillmanBuildsTech.Serv.yaml",
+        "packaging/winget/TillmanBuildsTech.serv.installer.yaml",
+        "packaging/winget/TillmanBuildsTech.serv.locale.en-US.yaml",
+        "packaging/winget/TillmanBuildsTech.serv.yaml",
     ]:
         update_url_and_next_line_field(
             path,

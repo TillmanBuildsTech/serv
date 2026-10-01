@@ -17,7 +17,7 @@ SHA256 checksums (pinned in chocolateyInstall.ps1 and verified at install):
 
 These checksums are published in the repository at:
   https://github.com/TillmanBuildsTech/serv/blob/main/packaging/npm/serv/checksums.json
-  https://github.com/TillmanBuildsTech/serv/blob/main/packaging/winget/TillmanBuildsTech.Serv.installer.yaml
+  https://github.com/TillmanBuildsTech/serv/blob/main/packaging/winget/TillmanBuildsTech.serv.installer.yaml
 
 The archive contains a single static binary, serv.exe. Source and build
 instructions (reproducible via `go build`) live at:

@@ -6,9 +6,11 @@
   `dev`. Each task pushes its branch into `dev` on completion.
 - **`dev`** — the integration branch where all in-flight work accumulates. CI runs on
   every push here (tests only — no release, no artifacts, no deploy). Safe for automated
-  pushes. When a set of changes is ready to test together, cut/merge `dev` into `release`.
-- **`release`** — RC cut for the next version. Every push here (i.e. every merged feature
-  PR) triggers the [Prerelease](../.github/workflows/prerelease.yml) workflow, which builds
+  pushes. When a set of changes is ready to test together, open a **pull request from `dev`
+  into `release`** — never push or merge into `release` directly.
+- **`release`** — RC cut for the next version. The **merge of the `dev` → `release` PR**
+  (and every subsequent push here) triggers the [Prerelease](../.github/workflows/prerelease.yml)
+  workflow, which builds
   all platform binaries and publishes them as a GitHub **pre-release** tagged
   `v<VERSION>-rc.N`, where `<VERSION>` is whatever is currently in
   [`internal/version/VERSION`](../internal/version/VERSION) and `N` auto-increments per
@@ -22,11 +24,11 @@
 
 ```
 task/* (worktree)  --push-->  dev  (CI: tests only)
-        dev  --cut/merge-->  release  --PR-->  main
-                    |                        |
-              prerelease.yml            release.yml
-           (rc builds, GitHub        (tag, GitHub release,
-            pre-release only)         npm, Homebrew, Scoop, winget, Chocolatey)
+        dev  --PR-->  release  --PR-->  main
+              |                        |
+        prerelease.yml            release.yml
+     (rc builds, GitHub        (tag, GitHub release,
+      pre-release only)         npm, Homebrew, Scoop, winget, Chocolatey)
 ```
 
 ## Versioning
@@ -43,8 +45,9 @@ build (so the embedded `version.Version` in rc binaries reads e.g.
   GitHub release notes are auto-generated as a convenience, but the CHANGELOG
   is the maintained record and is kept in sync with `VERSION`.
 - **`VERSION` and `CHANGELOG.md` are always bumped together** — never one
-  without the other — as a single step at the **`dev` → `release` cut**, before
-  an RC is built. Use the helper:
+  without the other — committed on `dev` as a single step before the
+  `dev` → `release` PR is opened, so an RC is never built from an unbumped
+  version. Use the helper:
 
   ```sh
   python3 scripts/bump_version.py 0.2.0 -m "One-line summary of the release"
@@ -63,10 +66,11 @@ build (so the embedded `version.Version` in rc binaries reads e.g.
 
 This means:
 
-- Bump `VERSION` + `CHANGELOG.md` once per release cycle, at the `dev` →
-  `release` cut, via `scripts/bump_version.py`.
-- Every subsequent push to `release` produces the next `-rc.N` for that same
-  target version, with no further file edits needed.
+- Bump `VERSION` + `CHANGELOG.md` once per release cycle, committed on `dev` via
+  `scripts/bump_version.py`, before opening the `dev` → `release` PR.
+- Merging the `dev` → `release` PR, and every subsequent push to `release`,
+  produces the next `-rc.N` for that same target version, with no further file
+  edits needed.
 - Merging `release` into `main` releases exactly that version, unsuffixed.
 
 ## What pre-releases do *not* do

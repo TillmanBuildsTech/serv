@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0]
+
+### Added
+
+- Reconciled main into dev; renamed winget manifests to TillmanBuildsTech.serv.*
+
 ## [0.2.0]
 
 ### Added
