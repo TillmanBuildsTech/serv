@@ -7,8 +7,8 @@ users can `choco install serv`.
 The package follows community-package conventions: a `serv.nuspec`, a
 `tools/chocolateyInstall.ps1` that downloads the official `serv.exe` for the
 host architecture and verifies its SHA256 checksum, a
-`tools/chocolateyUninstall.ps1`, and a `tools/VERIFICATION.txt` for the
-package verifier.
+`tools/chocolateyUninstall.ps1`. No `VERIFICATION.txt` is shipped: the package
+downloads the binary, and the moderators asked for it to be removed.
 
 ## Prerequisites
 
