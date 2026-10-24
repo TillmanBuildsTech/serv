@@ -7,6 +7,11 @@ on:
         description: 'Version to publish (e.g. 0.2.0). Must match a released GitHub tag with the windows binaries.'
         required: true
         type: string
+      ref:
+        description: 'Git ref (branch, tag or SHA) to take packaging files from'
+        required: false
+        default: main
+        type: string
 
 permissions:
   contents: read
@@ -17,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ inputs.ref }}
 
       - name: Pin packaging to v${{ inputs.version }} and fetch checksums
         shell: pwsh
@@ -62,10 +67,17 @@ jobs:
           Write-Host "--- install script checksums ---"
           Get-Content $install | Select-String -Pattern "checksum ="
 
+      - name: Remove stale VERIFICATION.txt (Chocolatey moderator request)
+        shell: pwsh
+        run: |
+          $f = 'packaging/chocolatey/tools/VERIFICATION.txt'
+          if (Test-Path $f) { Remove-Item $f -Force; Write-Host "removed $f" } else { Write-Host "$f not present" }
+
       - name: Pack Chocolatey package
         shell: pwsh
         working-directory: packaging/chocolatey
         run: |
+          if (Test-Path tools/VERIFICATION.txt) { throw "VERIFICATION.txt must not be packed" }
           choco pack
           $pkg = Get-ChildItem -Filter *.nupkg | Select-Object -First 1
           if (-not $pkg) { throw "choco pack produced no .nupkg" }
