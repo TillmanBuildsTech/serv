@@ -1,11 +1,5 @@
 # Changelog
 
-## [0.3.1]
-
-### Added
-
-- Chocolatey moderator fix: drop stale VERIFICATION.txt
-
 ## [0.3.0]
 
 ### Added
