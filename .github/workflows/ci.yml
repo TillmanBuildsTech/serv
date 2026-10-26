@@ -18,7 +18,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine if version guard applies
+        id: scope
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$BASE_REF" != "main" ]; then
+            echo "PR targets $BASE_REF (not main) - version guard not required"
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")
+          echo "changed files:"; echo "$changed"
+          other=$(echo "$changed" | grep -Ev '^(packaging/chocolatey/|docs/|\.github/workflows/publish-chocolatey\.yml$|\.github/workflows/ci\.yml$)' || true)
+          if [ -z "$other" ]; then
+            echo "Only packaging/docs/workflow files changed - skipping version guard"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fail if VERSION already has a release tag
+        if: steps.scope.outputs.skip != 'true'
         run: |
           version=$(tr -d '[:space:]' < internal/version/VERSION)
           echo "current VERSION: $version"
