@@ -33,8 +33,6 @@ var runCmd = func(name string, args ...string) (string, error) {
 // darwinManager implements ServiceManager using launchd via launchctl.
 type darwinManager struct{}
 
-func label(name string) string { return fmt.Sprintf("com.serv.%s", name) }
-
 // isUserLevel reports whether the service should run as a per-user
 // LaunchAgent rather than a system-wide LaunchDaemon.
 func isUserLevel(cfg *api.ServiceConfig) bool {
@@ -337,65 +335,6 @@ func parsePlistInt(out, key string) int {
 	}
 	v, _ := strconv.Atoi(strings.TrimSpace(rest[:end]))
 	return v
-}
-
-// renderPlist builds a launchd plist from cfg.
-func renderPlist(cfg *api.ServiceConfig) string {
-	var b strings.Builder
-
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	b.WriteString(`<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">` + "\n")
-	b.WriteString("<plist version=\"1.0\">\n<dict>\n")
-
-	fmt.Fprintf(&b, "\t<key>Label</key>\n\t<string>%s</string>\n", label(cfg.Name))
-
-	b.WriteString("\t<key>ProgramArguments</key>\n\t<array>\n")
-	fmt.Fprintf(&b, "\t\t<string>%s</string>\n", cfg.Executable)
-	for _, arg := range cfg.Arguments {
-		fmt.Fprintf(&b, "\t\t<string>%s</string>\n", arg)
-	}
-	b.WriteString("\t</array>\n")
-
-	if cfg.WorkingDirectory != "" {
-		fmt.Fprintf(&b, "\t<key>WorkingDirectory</key>\n\t<string>%s</string>\n", cfg.WorkingDirectory)
-	}
-
-	if len(cfg.Environment) > 0 {
-		b.WriteString("\t<key>EnvironmentVariables</key>\n\t<dict>\n")
-		for k, v := range cfg.Environment {
-			fmt.Fprintf(&b, "\t\t<key>%s</key>\n\t\t<string>%s</string>\n", k, v)
-		}
-		b.WriteString("\t</dict>\n")
-	}
-
-	if cfg.Account.Type == api.AccountTypeUser && cfg.Account.Username != "" {
-		fmt.Fprintf(&b, "\t<key>UserName</key>\n\t<string>%s</string>\n", cfg.Account.Username)
-	}
-
-	keepAlive := cfg.Restart.Enabled == nil || *cfg.Restart.Enabled
-	fmt.Fprintf(&b, "\t<key>KeepAlive</key>\n\t<%s/>\n", boolTag(keepAlive))
-
-	if cfg.Restart.ThrottleCap.Unwrap() > 0 {
-		fmt.Fprintf(&b, "\t<key>ThrottleInterval</key>\n\t<integer>%d</integer>\n", int(cfg.Restart.ThrottleCap.Unwrap().Seconds()))
-	}
-
-	if cfg.Stdout != "" {
-		fmt.Fprintf(&b, "\t<key>StandardOutPath</key>\n\t<string>%s</string>\n", cfg.Stdout)
-	}
-	if cfg.Stderr != "" {
-		fmt.Fprintf(&b, "\t<key>StandardErrorPath</key>\n\t<string>%s</string>\n", cfg.Stderr)
-	}
-
-	b.WriteString("</dict>\n</plist>\n")
-
-	return b.String()
-}
-
-func boolTag(v bool) string {
-	if v {
-		return "true"
-	}
-	return "false"
 }
 
 // writeDarwinServiceConfig marshals cfg to YAML and writes it to the

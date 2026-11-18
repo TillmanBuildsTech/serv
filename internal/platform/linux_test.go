@@ -59,7 +59,7 @@ func TestLinuxManagerInstall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading unit file: %v", err)
 	}
-	if !strings.Contains(string(data), "ExecStart=/usr/bin/myapp") {
+	if !strings.Contains(string(data), `ExecStart="/usr/bin/myapp"`) {
 		t.Errorf("unit file missing ExecStart: %s", data)
 	}
 
@@ -239,9 +239,9 @@ func TestRenderUnit(t *testing.T) {
 
 	for _, want := range []string{
 		"Description=My App",
-		"ExecStart=/usr/bin/myapp --flag value",
+		`ExecStart="/usr/bin/myapp" "--flag" "value"`,
 		"WorkingDirectory=/var/lib/myapp",
-		"Environment=FOO=bar",
+		`Environment="FOO=bar"`,
 		"User=svcuser",
 		"Restart=on-failure",
 		"StandardOutput=append:/var/log/myapp/out.log",
