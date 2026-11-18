@@ -62,6 +62,9 @@ func (l *linuxManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
 	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 	if _, err := os.Stat(unitPath(cfg.Name)); err == nil {
 		return fmt.Errorf("service %q already exists", cfg.Name)
 	}
@@ -89,6 +92,9 @@ func (l *linuxManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove stops, disables, and deletes the unit file for name.
 func (l *linuxManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	if _, err := os.Stat(unitPath(name)); os.IsNotExist(err) {
 		return fmt.Errorf("service %q not found", name)
 	}
@@ -105,7 +111,10 @@ func (l *linuxManager) Remove(name string) error {
 		return err
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -280,6 +289,12 @@ func (l *linuxManager) List() ([]ServiceInfo, error) {
 func (l *linuxManager) UpdateConfig(name string, cfg *api.ServiceConfig) error {
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
+	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
 	}
 	if _, err := os.Stat(unitPath(name)); os.IsNotExist(err) {
 		return fmt.Errorf("service %q not found", name)

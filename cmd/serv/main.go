@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/TillmanBuildsTech/serv/internal/cmd"
+	"github.com/TillmanBuildsTech/serv/internal/config"
 	"github.com/TillmanBuildsTech/serv/internal/service"
 )
 
@@ -14,6 +15,10 @@ func main() {
 	// This bypasses the normal Cobra CLI entirely: service.Run blocks for
 	// the life of the service and only returns once it has stopped.
 	if len(os.Args) >= 3 && os.Args[1] == "run" {
+		if err := config.ValidateName(os.Args[2]); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
 		if err := service.Run(os.Args[2]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)

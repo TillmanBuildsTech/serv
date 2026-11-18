@@ -27,6 +27,9 @@ func (w *windowsManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
 	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 
 	m, err := connectSCM()
 	if err != nil {
@@ -69,6 +72,9 @@ func (w *windowsManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove unregisters a service from the SCM and deletes its config files.
 func (w *windowsManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	m, err := connectSCM()
 	if err != nil {
 		return err
@@ -93,7 +99,10 @@ func (w *windowsManager) Remove(name string) error {
 		return fmt.Errorf("removing service %q: %w", name, translateWinErr(err))
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -300,6 +309,12 @@ func isServManaged(cfg mgr.Config) bool {
 func (w *windowsManager) UpdateConfig(name string, cfg *api.ServiceConfig) error {
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
+	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
 	}
 
 	m, err := connectSCM()

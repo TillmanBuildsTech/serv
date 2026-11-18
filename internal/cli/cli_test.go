@@ -445,3 +445,43 @@ func TestStatusQuietSuppressesStarCTA(t *testing.T) {
 	}
 }
 
+func TestCommandsRejectInvalidNames(t *testing.T) {
+	called := false
+	withMockManager(t, &platform.MockManager{
+		RemoveFunc:  func(string) error { called = true; return nil },
+		StartFunc:   func(string) error { called = true; return nil },
+		StopFunc:    func(string) error { called = true; return nil },
+		RestartFunc: func(string) error { called = true; return nil },
+		InstallFunc: func(*api.ServiceConfig) error { called = true; return nil },
+		StatusFunc: func(string) (platform.ServiceStatus, error) {
+			called = true
+			return platform.ServiceStatus{}, nil
+		},
+		UpdateConfigFunc: func(string, *api.ServiceConfig) error { called = true; return nil },
+	})
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := [][]string{
+		{"remove", ".."},
+		{"remove", "."},
+		{"remove", "../etc"},
+		{"config", "..", "--description", "x"},
+		{"start", ".."},
+		{"stop", "a/b"},
+		{"restart", `..\x`},
+		{"status", ".."},
+		{"install", "--exe", exe, "--name", ".."},
+		{"install", "--exe", exe, "--name", "a/b"},
+	}
+	for _, args := range cases {
+		called = false
+		if _, err := runCmd(t, args...); err == nil {
+			t.Errorf("serv %v: expected an error", args)
+		}
+		if called {
+			t.Errorf("serv %v: platform manager was called despite an invalid name", args)
+		}
+	}
+}

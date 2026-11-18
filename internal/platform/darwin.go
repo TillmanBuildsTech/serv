@@ -105,6 +105,9 @@ func (d *darwinManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
 	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 
 	userLevel := isUserLevel(cfg)
 	path, err := plistPath(cfg.Name, userLevel)
@@ -136,6 +139,9 @@ func (d *darwinManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove unloads and deletes the plist for name.
 func (d *darwinManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	path, _, err := findPlistPath(name)
 	if err != nil {
 		return err
@@ -148,7 +154,10 @@ func (d *darwinManager) Remove(name string) error {
 		return fmt.Errorf("removing plist file: %w", err)
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -269,6 +278,12 @@ func (d *darwinManager) List() ([]ServiceInfo, error) {
 func (d *darwinManager) UpdateConfig(name string, cfg *api.ServiceConfig) error {
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
+	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
 	}
 
 	path, _, err := findPlistPath(name)

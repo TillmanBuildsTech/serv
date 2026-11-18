@@ -293,3 +293,85 @@ func TestParseSystemdProperties(t *testing.T) {
 		t.Errorf("parseSystemdProperties = %v", props)
 	}
 }
+
+// Regression: Remove("..") must not delete anything outside the config
+// root. Previously it removed filepath.Dir(<root>/../config.yaml), i.e. the
+// parent of the config root.
+func TestLinuxManagerRemoveRejectsTraversalName(t *testing.T) {
+	unitDir := t.TempDir()
+	origDir := systemdUnitDir
+	systemdUnitDir = unitDir
+	t.Cleanup(func() { systemdUnitDir = origDir })
+
+	sandbox := t.TempDir()
+	t.Setenv("SERV_CONFIG_DIR", filepath.Join(sandbox, "serv"))
+	sentinel := filepath.Join(sandbox, "IMPORTANT_FILE")
+	if err := os.WriteFile(sentinel, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// A unit file a pre-fix install of ".." would have created.
+	if err := os.WriteFile(filepath.Join(unitDir, "serv-...service"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var calls [][]string
+	withMockRunCmd(t, &calls, func(name string, args ...string) (string, error) { return "", nil })
+
+	l := &linuxManager{}
+	if err := l.Remove(".."); err == nil {
+		t.Fatal("Remove(\"..\"): expected an error")
+	}
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("sentinel outside the config root was deleted: %v", err)
+	}
+	if len(calls) != 0 {
+		t.Errorf("expected no systemctl calls for an invalid name, got %v", calls)
+	}
+}
+
+func TestLinuxManagerInstallRejectsInvalidName(t *testing.T) {
+	unitDir := t.TempDir()
+	origDir := systemdUnitDir
+	systemdUnitDir = unitDir
+	t.Cleanup(func() { systemdUnitDir = origDir })
+
+	l := &linuxManager{}
+	for _, n := range []string{"..", "a/b", "my app"} {
+		if err := l.Install(&api.ServiceConfig{Name: n, Executable: "/bin/true"}); err == nil {
+			t.Errorf("Install(%q): expected an error", n)
+		}
+	}
+	entries, _ := os.ReadDir(unitDir)
+	if len(entries) != 0 {
+		t.Errorf("unit files written for invalid names: %v", entries)
+	}
+}
+
+func TestLinuxManagerRemoveDeletesOnlyServiceConfigDir(t *testing.T) {
+	unitDir := t.TempDir()
+	origDir := systemdUnitDir
+	systemdUnitDir = unitDir
+	t.Cleanup(func() { systemdUnitDir = origDir })
+
+	root := filepath.Join(t.TempDir(), "serv")
+	t.Setenv("SERV_CONFIG_DIR", root)
+	for _, d := range []string{"myapp", "other"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(unitDir, "serv-myapp.service"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	withMockRunCmd(t, nil, func(name string, args ...string) (string, error) { return "", nil })
+
+	if err := (&linuxManager{}).Remove("myapp"); err != nil {
+		t.Fatalf("Remove: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "myapp")); !os.IsNotExist(err) {
+		t.Errorf("config dir for myapp still exists (err=%v)", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "other")); err != nil {
+		t.Errorf("sibling config dir was removed: %v", err)
+	}
+}

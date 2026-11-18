@@ -19,6 +19,9 @@ func newConfigCmd() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		name := args[0]
+		if err := config.ValidateName(name); err != nil {
+			return err
+		}
 
 		cfg, err := config.Load(config.DefaultConfigPath(name))
 		if err != nil {
