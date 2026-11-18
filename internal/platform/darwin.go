@@ -168,12 +168,30 @@ func (d *darwinManager) Stop(name string) error {
 	return err
 }
 
-// Restart stops and starts a service via launchctl.
+// Restart restarts a service via `launchctl kickstart -k`, which kills the
+// running instance and starts it again as one operation. The previous
+// stop-then-start sequence raced: `launchctl stop` returns before the job
+// has exited, so the following `launchctl start` could be a no-op while the
+// old instance was still shutting down.
 func (d *darwinManager) Restart(name string) error {
-	if err := d.Stop(name); err != nil {
-		return err
+	_, err := launchctl("kickstart", "-k", launchdTarget(name))
+	return err
+}
+
+// launchdTarget returns the "<domain>/<label>" service target used by
+// `launchctl kickstart`: system/<label> for LaunchDaemons, gui/<uid>/<label>
+// for per-user LaunchAgents. For jobs serv did not install, the domain is
+// inferred from whether serv is running as root.
+func launchdTarget(name string) string {
+	lbl := resolveLabel(name)
+	_, userLevel, err := findPlistPath(name)
+	if err != nil {
+		userLevel = os.Geteuid() != 0
 	}
-	return d.Start(name)
+	if userLevel {
+		return fmt.Sprintf("gui/%d/%s", os.Getuid(), lbl)
+	}
+	return "system/" + lbl
 }
 
 // Status queries launchd for the current state of a service.
