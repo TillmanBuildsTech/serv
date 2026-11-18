@@ -57,7 +57,7 @@ func (h *handler) Execute(args []string, r <-chan svc.ChangeRequest, s chan<- sv
 			case svc.Interrogate:
 				s <- req.CurrentStatus
 			case svc.Stop, svc.Shutdown:
-				s <- svc.Status{State: svc.StopPending}
+				s <- svc.Status{State: svc.StopPending, WaitHint: stopWaitHint(h.cfg)}
 				rt.stopChild()
 				s <- svc.Status{State: svc.Stopped}
 				return false, 0
@@ -117,4 +117,14 @@ func waitBackoff(r <-chan svc.ChangeRequest, s chan<- svc.Status, delay time.Dur
 			return false
 		}
 	}
+}
+
+// stopWaitHint tells the SCM how long (in milliseconds) graceful shutdown
+// may take, so `sc stop`, services.msc and `serv stop/restart` don't treat
+// the multi-stage escalation as a hung service.
+func stopWaitHint(cfg *api.ServiceConfig) uint32 {
+	sm := cfg.StopMethod
+	total := sm.ConsoleTimeout.Unwrap() + sm.WindowTimeout.Unwrap() +
+		sm.ThreadsTimeout.Unwrap() + sm.TerminateTimeout.Unwrap() + 5*time.Second
+	return uint32(total / time.Millisecond)
 }

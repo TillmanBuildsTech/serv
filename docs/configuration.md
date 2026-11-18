@@ -82,7 +82,7 @@ default above.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `name` | string | *(required)* | Unique service identifier used by the SCM/systemd/launchd. If omitted on the `install` CLI, defaults to the executable's base name. |
+| `name` | string | *(required)* | Unique service identifier used by the SCM/systemd/launchd. If omitted on the `install` CLI, defaults to the executable's base name. Must start with a letter or digit and contain only letters, digits, `.`, `_` or `-` (max 256 characters). |
 | `display_name` | string | `""` | Human-readable name shown in `services.msc`, `systemctl status`, etc. |
 | `description` | string | `""` | Longer description shown alongside the service. |
 | `executable` | string | *(required)* | Path to the program serv launches and supervises. Must exist. |

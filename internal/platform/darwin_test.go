@@ -100,10 +100,17 @@ func TestDarwinManagerStartStopRestart(t *testing.T) {
 	if err := d.Stop("myapp"); err != nil {
 		t.Fatalf("Stop: %v", err)
 	}
+	if err := d.Restart("myapp"); err != nil {
+		t.Fatalf("Restart: %v", err)
+	}
 
 	want := [][]string{
 		{"launchctl", "start", "com.serv.myapp"},
 		{"launchctl", "stop", "com.serv.myapp"},
+		{"launchctl", "kickstart", "-k", "system/com.serv.myapp"},
+	}
+	if len(calls) != len(want) {
+		t.Fatalf("got %d launchctl calls %v, want %d", len(calls), calls, len(want))
 	}
 	for i := range want {
 		if strings.Join(calls[i], " ") != strings.Join(want[i], " ") {

@@ -33,8 +33,6 @@ var runCmd = func(name string, args ...string) (string, error) {
 // darwinManager implements ServiceManager using launchd via launchctl.
 type darwinManager struct{}
 
-func label(name string) string { return fmt.Sprintf("com.serv.%s", name) }
-
 // isUserLevel reports whether the service should run as a per-user
 // LaunchAgent rather than a system-wide LaunchDaemon.
 func isUserLevel(cfg *api.ServiceConfig) bool {
@@ -105,6 +103,9 @@ func (d *darwinManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
 	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 
 	userLevel := isUserLevel(cfg)
 	path, err := plistPath(cfg.Name, userLevel)
@@ -136,6 +137,9 @@ func (d *darwinManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove unloads and deletes the plist for name.
 func (d *darwinManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	path, _, err := findPlistPath(name)
 	if err != nil {
 		return err
@@ -148,7 +152,10 @@ func (d *darwinManager) Remove(name string) error {
 		return fmt.Errorf("removing plist file: %w", err)
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -168,12 +175,30 @@ func (d *darwinManager) Stop(name string) error {
 	return err
 }
 
-// Restart stops and starts a service via launchctl.
+// Restart restarts a service via `launchctl kickstart -k`, which kills the
+// running instance and starts it again as one operation. The previous
+// stop-then-start sequence raced: `launchctl stop` returns before the job
+// has exited, so the following `launchctl start` could be a no-op while the
+// old instance was still shutting down.
 func (d *darwinManager) Restart(name string) error {
-	if err := d.Stop(name); err != nil {
-		return err
+	_, err := launchctl("kickstart", "-k", launchdTarget(name))
+	return err
+}
+
+// launchdTarget returns the "<domain>/<label>" service target used by
+// `launchctl kickstart`: system/<label> for LaunchDaemons, gui/<uid>/<label>
+// for per-user LaunchAgents. For jobs serv did not install, the domain is
+// inferred from whether serv is running as root.
+func launchdTarget(name string) string {
+	lbl := resolveLabel(name)
+	_, userLevel, err := findPlistPath(name)
+	if err != nil {
+		userLevel = os.Geteuid() != 0
 	}
-	return d.Start(name)
+	if userLevel {
+		return fmt.Sprintf("gui/%d/%s", os.Getuid(), lbl)
+	}
+	return "system/" + lbl
 }
 
 // Status queries launchd for the current state of a service.
@@ -252,6 +277,12 @@ func (d *darwinManager) UpdateConfig(name string, cfg *api.ServiceConfig) error 
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
 	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 
 	path, _, err := findPlistPath(name)
 	if err != nil {
@@ -304,65 +335,6 @@ func parsePlistInt(out, key string) int {
 	}
 	v, _ := strconv.Atoi(strings.TrimSpace(rest[:end]))
 	return v
-}
-
-// renderPlist builds a launchd plist from cfg.
-func renderPlist(cfg *api.ServiceConfig) string {
-	var b strings.Builder
-
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	b.WriteString(`<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">` + "\n")
-	b.WriteString("<plist version=\"1.0\">\n<dict>\n")
-
-	fmt.Fprintf(&b, "\t<key>Label</key>\n\t<string>%s</string>\n", label(cfg.Name))
-
-	b.WriteString("\t<key>ProgramArguments</key>\n\t<array>\n")
-	fmt.Fprintf(&b, "\t\t<string>%s</string>\n", cfg.Executable)
-	for _, arg := range cfg.Arguments {
-		fmt.Fprintf(&b, "\t\t<string>%s</string>\n", arg)
-	}
-	b.WriteString("\t</array>\n")
-
-	if cfg.WorkingDirectory != "" {
-		fmt.Fprintf(&b, "\t<key>WorkingDirectory</key>\n\t<string>%s</string>\n", cfg.WorkingDirectory)
-	}
-
-	if len(cfg.Environment) > 0 {
-		b.WriteString("\t<key>EnvironmentVariables</key>\n\t<dict>\n")
-		for k, v := range cfg.Environment {
-			fmt.Fprintf(&b, "\t\t<key>%s</key>\n\t\t<string>%s</string>\n", k, v)
-		}
-		b.WriteString("\t</dict>\n")
-	}
-
-	if cfg.Account.Type == api.AccountTypeUser && cfg.Account.Username != "" {
-		fmt.Fprintf(&b, "\t<key>UserName</key>\n\t<string>%s</string>\n", cfg.Account.Username)
-	}
-
-	keepAlive := cfg.Restart.Enabled == nil || *cfg.Restart.Enabled
-	fmt.Fprintf(&b, "\t<key>KeepAlive</key>\n\t<%s/>\n", boolTag(keepAlive))
-
-	if cfg.Restart.ThrottleCap.Unwrap() > 0 {
-		fmt.Fprintf(&b, "\t<key>ThrottleInterval</key>\n\t<integer>%d</integer>\n", int(cfg.Restart.ThrottleCap.Unwrap().Seconds()))
-	}
-
-	if cfg.Stdout != "" {
-		fmt.Fprintf(&b, "\t<key>StandardOutPath</key>\n\t<string>%s</string>\n", cfg.Stdout)
-	}
-	if cfg.Stderr != "" {
-		fmt.Fprintf(&b, "\t<key>StandardErrorPath</key>\n\t<string>%s</string>\n", cfg.Stderr)
-	}
-
-	b.WriteString("</dict>\n</plist>\n")
-
-	return b.String()
-}
-
-func boolTag(v bool) string {
-	if v {
-		return "true"
-	}
-	return "false"
 }
 
 // writeDarwinServiceConfig marshals cfg to YAML and writes it to the

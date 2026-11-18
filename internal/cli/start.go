@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/TillmanBuildsTech/serv/internal/config"
 )
 
 func newStartCmd() *cobra.Command {
@@ -13,6 +15,9 @@ func newStartCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+			if err := config.ValidateControlName(name); err != nil {
+				return err
+			}
 			if err := managerFactory().Start(name); err != nil {
 				return err
 			}

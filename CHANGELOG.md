@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.1]
+
+### Fixed
+
+- **`serv restart` on Windows** — restart no longer fails with "service is
+  already running" on a running service. serv now waits for the SCM to report
+  the service as `STOPPED` before starting it again (timeout derived from the
+  configured stop stages, minimum 30s), and `serv stop` likewise only reports
+  success once the service has actually stopped. The service now reports a
+  stop `WaitHint` so `sc stop`/services.msc don't treat graceful shutdown as
+  hung. On macOS, `restart` uses `launchctl kickstart -k` instead of a racy
+  stop + start.
+- **Service-name validation (security)** — `serv remove ..` could delete the
+  parent of the config root (e.g. `/etc` on Linux). Names are now validated
+  (`^[A-Za-z0-9][A-Za-z0-9._-]*$`, max 256 characters) for `install`,
+  `config`, `remove` and `run`; `start`/`stop`/`restart`/`status` reject
+  `.`, `..`, path separators, control characters and a leading `-` while
+  still allowing services serv did not install. `remove` only ever deletes
+  `<config root>/<name>`.
+- **Argument and environment quoting in generated units** — systemd
+  `ExecStart=` arguments and `Environment=` values are now quoted and escaped
+  per systemd.syntax, so values with spaces, quotes, `%`, `$` or backslashes
+  reach the process unchanged (previously `--args "hello world"` became two
+  arguments and `FOO: "bar baz"` became `FOO=bar`). launchd plist values are
+  now XML-escaped, so `&` or `<` no longer produce an invalid plist.
+
 ## [0.3.0]
 
 ### Added

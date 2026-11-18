@@ -32,6 +32,8 @@ func Validate(cfg *api.ServiceConfig) error {
 
 	if cfg.Name == "" {
 		errs = append(errs, ValidationError{Field: "name", Message: "is required"})
+	} else if err := ValidateName(cfg.Name); err != nil {
+		errs = append(errs, ValidationError{Field: "name", Message: err.Error()})
 	}
 
 	if cfg.Executable == "" {

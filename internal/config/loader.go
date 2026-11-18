@@ -28,8 +28,14 @@ func Parse(data []byte) (*api.ServiceConfig, error) {
 }
 
 func DefaultConfigPath(serviceName string) string {
+	return filepath.Join(ConfigRoot(), serviceName, "config.yaml")
+}
+
+// ConfigRoot returns the per-OS directory holding one subdirectory per
+// serv-managed service (overridable with SERV_CONFIG_DIR).
+func ConfigRoot() string {
 	if dir := os.Getenv("SERV_CONFIG_DIR"); dir != "" {
-		return filepath.Join(dir, serviceName, "config.yaml")
+		return dir
 	}
 	switch runtime.GOOS {
 	case "windows":
@@ -37,11 +43,11 @@ func DefaultConfigPath(serviceName string) string {
 		if programData == "" {
 			programData = `C:\ProgramData`
 		}
-		return filepath.Join(programData, "serv", serviceName, "config.yaml")
+		return filepath.Join(programData, "serv")
 	case "darwin":
 		home, _ := os.UserHomeDir()
-		return filepath.Join(home, "Library", "Application Support", "serv", serviceName, "config.yaml")
+		return filepath.Join(home, "Library", "Application Support", "serv")
 	default:
-		return filepath.Join("/etc", "serv", serviceName, "config.yaml")
+		return filepath.Join("/etc", "serv")
 	}
 }

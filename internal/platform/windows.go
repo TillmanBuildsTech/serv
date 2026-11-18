@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/TillmanBuildsTech/serv/internal/config"
 	"github.com/TillmanBuildsTech/serv/pkg/api"
@@ -25,6 +26,9 @@ type windowsManager struct{}
 func (w *windowsManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
 	}
 
 	m, err := connectSCM()
@@ -68,6 +72,9 @@ func (w *windowsManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove unregisters a service from the SCM and deletes its config files.
 func (w *windowsManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	m, err := connectSCM()
 	if err != nil {
 		return err
@@ -92,7 +99,10 @@ func (w *windowsManager) Remove(name string) error {
 		return fmt.Errorf("removing service %q: %w", name, translateWinErr(err))
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -121,7 +131,8 @@ func (w *windowsManager) Start(name string) error {
 	return nil
 }
 
-// Stop halts a running service.
+// Stop halts a running service and waits until the SCM reports it as
+// stopped, so "Service stopped." is only printed once it really is.
 func (w *windowsManager) Stop(name string) error {
 	m, err := connectSCM()
 	if err != nil {
@@ -135,21 +146,83 @@ func (w *windowsManager) Stop(name string) error {
 	}
 	defer s.Close()
 
-	if _, err := s.Control(svc.Stop); err != nil {
+	wasRunning, err := stopAndWait(winService{s}, stopWaitFor(name))
+	if err != nil {
 		return fmt.Errorf("stopping service %q: %w", name, translateWinErr(err))
+	}
+	if !wasRunning {
+		return fmt.Errorf("stopping service %q: %w", name, translateWinErr(windows.ERROR_SERVICE_NOT_ACTIVE))
 	}
 
 	return nil
 }
 
-// Restart stops and then starts a service.
+// Restart stops the service (if running), waits for the SCM to report it
+// as STOPPED, then starts it. SERVICE_CONTROL_STOP is asynchronous: it
+// returns at STOP_PENDING while serv is still escalating shutdown of the
+// child, and StartService fails with ERROR_SERVICE_ALREADY_RUNNING until
+// the service has fully stopped.
 func (w *windowsManager) Restart(name string) error {
-	if err := w.Stop(name); err != nil {
-		if !errors.Is(err, windows.ERROR_SERVICE_NOT_ACTIVE) {
-			return err
-		}
+	m, err := connectSCM()
+	if err != nil {
+		return err
 	}
-	return w.Start(name)
+	defer m.Disconnect()
+
+	s, err := m.OpenService(name)
+	if err != nil {
+		return fmt.Errorf("service %q not found: %w", name, translateWinErr(err))
+	}
+	defer s.Close()
+
+	if err := restartService(winService{s}, stopWaitFor(name)); err != nil {
+		return fmt.Errorf("restarting service %q: %w", name, translateWinErr(err))
+	}
+	return nil
+}
+
+// winService adapts *mgr.Service to the platform-neutral stoppable
+// interface used by stopAndWait/restartService.
+type winService struct{ s *mgr.Service }
+
+func (w winService) queryState() (svcState, error) {
+	st, err := w.s.Query()
+	if err != nil {
+		return stateOther, err
+	}
+	switch st.State {
+	case svc.Stopped:
+		return stateStopped, nil
+	case svc.StopPending:
+		return stateStopPending, nil
+	default:
+		return stateOther, nil
+	}
+}
+
+func (w winService) sendStop() error {
+	_, err := w.s.Control(svc.Stop)
+	return err
+}
+
+func (w winService) start() error { return w.s.Start() }
+
+// stopWaitFor derives how long to wait for name to stop from its serv
+// config: the sum of the shutdown escalation stage timeouts plus headroom
+// for pre-stop hooks and SCM bookkeeping, never less than the default.
+func stopWaitFor(name string) waitOpts {
+	opts := defaultStopWait
+	cfg, err := config.Load(config.DefaultConfigPath(name))
+	if err != nil {
+		return opts
+	}
+	sm := cfg.StopMethod
+	total := sm.ConsoleTimeout.Unwrap() + sm.WindowTimeout.Unwrap() +
+		sm.ThreadsTimeout.Unwrap() + sm.TerminateTimeout.Unwrap() + 15*time.Second
+	if total > opts.timeout {
+		opts.timeout = total
+	}
+	return opts
 }
 
 // Status returns the current status of a service.
@@ -236,6 +309,12 @@ func isServManaged(cfg mgr.Config) bool {
 func (w *windowsManager) UpdateConfig(name string, cfg *api.ServiceConfig) error {
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
+	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
 	}
 
 	m, err := connectSCM()

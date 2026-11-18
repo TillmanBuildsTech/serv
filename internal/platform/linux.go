@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -62,6 +63,9 @@ func (l *linuxManager) Install(cfg *api.ServiceConfig) error {
 	if cfg == nil || cfg.Name == "" {
 		return fmt.Errorf("service config must have a name")
 	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 	if _, err := os.Stat(unitPath(cfg.Name)); err == nil {
 		return fmt.Errorf("service %q already exists", cfg.Name)
 	}
@@ -89,6 +93,9 @@ func (l *linuxManager) Install(cfg *api.ServiceConfig) error {
 
 // Remove stops, disables, and deletes the unit file for name.
 func (l *linuxManager) Remove(name string) error {
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
 	if _, err := os.Stat(unitPath(name)); os.IsNotExist(err) {
 		return fmt.Errorf("service %q not found", name)
 	}
@@ -105,7 +112,10 @@ func (l *linuxManager) Remove(name string) error {
 		return err
 	}
 
-	configDir := filepath.Dir(config.DefaultConfigPath(name))
+	configDir, err := config.ServiceConfigDir(name)
+	if err != nil {
+		return fmt.Errorf("removing config for service %q: %w", name, err)
+	}
 	if err := os.RemoveAll(configDir); err != nil {
 		return fmt.Errorf("removing config for service %q: %w", name, err)
 	}
@@ -281,6 +291,12 @@ func (l *linuxManager) UpdateConfig(name string, cfg *api.ServiceConfig) error {
 	if cfg == nil {
 		return fmt.Errorf("service config must not be nil")
 	}
+	if err := config.ValidateName(name); err != nil {
+		return err
+	}
+	if err := config.ValidateName(cfg.Name); err != nil {
+		return err
+	}
 	if _, err := os.Stat(unitPath(name)); os.IsNotExist(err) {
 		return fmt.Errorf("service %q not found", name)
 	}
@@ -350,25 +366,32 @@ func renderUnit(cfg *api.ServiceConfig) string {
 	}
 
 	b.WriteString("[Unit]\n")
-	fmt.Fprintf(&b, "Description=%s\n", description)
+	fmt.Fprintf(&b, "Description=%s\n", systemdPlainValue(description))
 	b.WriteString("\n[Service]\n")
 
-	execStart := cfg.Executable
+	words := make([]string, 0, 1+len(cfg.Arguments))
+	words = append(words, systemdQuoteExecWord(cfg.Executable))
 	for _, arg := range cfg.Arguments {
-		execStart += " " + arg
+		words = append(words, systemdQuoteExecWord(arg))
 	}
-	fmt.Fprintf(&b, "ExecStart=%s\n", execStart)
+	fmt.Fprintf(&b, "ExecStart=%s\n", strings.Join(words, " "))
 
 	if cfg.WorkingDirectory != "" {
-		fmt.Fprintf(&b, "WorkingDirectory=%s\n", cfg.WorkingDirectory)
+		fmt.Fprintf(&b, "WorkingDirectory=%s\n", systemdPlainValue(cfg.WorkingDirectory))
 	}
 
-	for k, v := range cfg.Environment {
-		fmt.Fprintf(&b, "Environment=%s=%s\n", k, v)
+	// Sorted so the generated unit is deterministic across rewrites.
+	envKeys := make([]string, 0, len(cfg.Environment))
+	for k := range cfg.Environment {
+		envKeys = append(envKeys, k)
+	}
+	sort.Strings(envKeys)
+	for _, k := range envKeys {
+		fmt.Fprintf(&b, "Environment=%s\n", systemdQuoteEnvAssignment(k, cfg.Environment[k]))
 	}
 
 	if cfg.Account.Type == api.AccountTypeUser && cfg.Account.Username != "" {
-		fmt.Fprintf(&b, "User=%s\n", cfg.Account.Username)
+		fmt.Fprintf(&b, "User=%s\n", systemdPlainValue(cfg.Account.Username))
 	}
 
 	restartPolicy := "on-failure"
@@ -381,12 +404,12 @@ func renderUnit(cfg *api.ServiceConfig) string {
 	}
 
 	if cfg.Stdout != "" {
-		fmt.Fprintf(&b, "StandardOutput=append:%s\n", cfg.Stdout)
+		fmt.Fprintf(&b, "StandardOutput=append:%s\n", systemdPlainValue(cfg.Stdout))
 	} else {
 		b.WriteString("StandardOutput=journal\n")
 	}
 	if cfg.Stderr != "" {
-		fmt.Fprintf(&b, "StandardError=append:%s\n", cfg.Stderr)
+		fmt.Fprintf(&b, "StandardError=append:%s\n", systemdPlainValue(cfg.Stderr))
 	} else {
 		b.WriteString("StandardError=journal\n")
 	}
